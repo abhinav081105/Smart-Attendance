@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Summary</title>
+  <style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    background: #f5f7fa;
+    min-height: 100vh;
+  }
+  .summary-box {
+    display: inline-block;
+    padding: 32px 48px;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 24px #0001;
+    margin: 40px auto;
+    min-width: 380px;
+    max-width: 98vw;
+  }
+  h2 {
+    margin-bottom: 24px;
+    color: #1a237e;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  .count {
+    font-size: 22px;
+    margin: 10px 0;
+    text-align: left;
+  }
+  .label {
+    font-weight: bold;
+    color: #1976d2;
+  }
+  select {
+    font-size: 1.1rem;
+    padding: 6px 18px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    margin-left: 10px;
+    background: #f2f2f2;
+    transition: border 0.2s;
+  }
+  select:focus {
+    border: 1.5px solid #1976d2;
+    outline: none;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0 10px 0;
+    background: #fafbfc;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px #0001;
+  }
+  th, td {
+    border: 1px solid #e0e0e0;
+    padding: 10px 14px;
+    text-align: center;
+    font-size: 1rem;
+  }
+  th {
+    background-color: #e3eafc;
+    font-weight: 600;
+    color: #1a237e;
+  }
+  .back-btn, #downloadBtn {
+    margin-top: 24px;
+    padding: 12px 32px;
+    font-size: 1.1rem;
+    border-radius: 7px;
+    border: none;
+    background: #1976d2;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    box-shadow: 0 2px 8px #0002;
+    transition: background 0.2s, box-shadow 0.2s;
+    margin-right: 10px;
+  }
+  .back-btn:hover, #downloadBtn:hover {
+    background: #125ea2;
+    box-shadow: 0 4px 16px #1976d255;
+  }
+  @media (max-width: 600px) {
+    .summary-box { padding: 12px 2vw; min-width: unset; }
+    table, th, td { font-size: 0.95rem; }
+    h2 { font-size: 1.2rem; }
+  }
+  </style>
+  <!-- Add this to your <head> for jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body style="margin:0; min-height:100vh; background:#f5f7fa;">
+  <div style="text-align:center; margin-bottom:10px;">
+    <img src="college-logo.png" alt="Lendi College Logo" style="max-width:100%; height:80px;">
+  </div>
+  <div style="display:flex; justify-content:center; align-items:center; min-height:80vh;">
+    <div class="summary-box">
+      <h2 id="summaryHeading"></h2>
+      <div class="count">
+        <span class="label">Total Students:</span> <span id="totalCount"></span>
+        &nbsp;|&nbsp;
+        <span class="label">Total Absentees:</span> <span id="totalAbsentees"></span>
+      </div>
+      <div class="count"><span class="label">Presents:</span> <span id="presentCount"></span></div>
+      <div class="count"><span class="label">Absents:</span> <span id="absentCount"></span></div>
+      <div class="count"><span class="label">Permissions:</span> <span id="permissionCount"></span></div>
+      <div style="margin-bottom:20px;">
+        <label><input type="checkbox" id="chkPresent" checked> Presents</label>
+        <label style="margin-left:18px;"><input type="checkbox" id="chkAbsent" checked> Absentees</label>
+        <label style="margin-left:18px;"><input type="checkbox" id="chkPermission" checked> Permissions</label>
+      </div>
+      <table id="resultTable" style="margin:10px auto;">
+        <thead>
+          <tr>
+            <th>Register Number</th>
+            <th>Section</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button id="downloadBtn" class="back-btn" style="background:#1976d2;margin-top:10px;">Download as PDF</button>
+      <button class="back-btn" onclick="window.location.href='ATTENDENCE.html'">Back to Attendance</button>
+    </div>
+  </div>
+  <script>
+  const summary = JSON.parse(localStorage.getItem('attendanceSummary'));
+const attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+
+// Set dynamic heading
+document.getElementById('summaryHeading').textContent = `3rd CSE ${summary.section} Section Summary`;
+document.getElementById('totalCount').textContent = attendanceData.length;
+document.getElementById('presentCount').textContent = summary.present;
+document.getElementById('absentCount').textContent = summary.absent;
+document.getElementById('permissionCount').textContent = summary.permission;
+document.getElementById('totalAbsentees').textContent = summary.absent + summary.permission;
+
+const resultTbody = document.querySelector('#resultTable tbody');
+const downloadBtn = document.getElementById('downloadBtn');
+const chkPresent = document.getElementById('chkPresent');
+const chkAbsent = document.getElementById('chkAbsent');
+const chkPermission = document.getElementById('chkPermission');
+
+// Download table as PDF
+downloadBtn.onclick = function() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const section = summary.section || '';
+  let y = 16;
+  let hasContent = false;
+
+  function addSection(title, data) {
+    if (data.length === 0) return;
+    doc.text(`3rd CSE ${section} ${title}`, 14, y); // <-- Updated heading
+    y += 6;
+    doc.autoTable({
+      head: [['Register Number', 'Section', 'Status']],
+      body: data.map(item => [
+        item.registerNumber,
+        item.section,
+        item.status.charAt(0).toUpperCase() + item.status.slice(1)
+      ]),
+      startY: y,
+      theme: 'grid',
+      styles: { fontSize: 11 }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+    hasContent = true;
+  }
+
+  const presentChecked = document.getElementById('chkPresent').checked;
+  const absentChecked = document.getElementById('chkAbsent').checked;
+  const permissionChecked = document.getElementById('chkPermission').checked;
+
+  if (presentChecked) {
+    const presents = attendanceData.filter(item => item.status === 'present');
+    addSection('Presents', presents);
+  }
+  if (absentChecked) {
+    const absents = attendanceData.filter(item => item.status === 'absent');
+    addSection('Absentees', absents);
+  }
+  if (permissionChecked) {
+    const permissions = attendanceData.filter(item => item.status === 'permission');
+    addSection('Permissions', permissions);
+  }
+
+  if (!hasContent) {
+    doc.text('No data selected.', 14, y);
+  }
+
+  doc.save(`3rd CSE ${section} Section Attendance.pdf`);
+};
+
+// Initial population of result table
+filterByCheckbox();
+
+// Checkbox filters
+function filterByCheckbox() {
+  const presentChecked = chkPresent.checked;
+  const absentChecked = chkAbsent.checked;
+  const permissionChecked = chkPermission.checked;
+
+  const filteredData = attendanceData.filter(item => {
+    if (item.status === 'present' && !presentChecked) return false;
+    if (item.status === 'absent' && !absentChecked) return false;
+    if (item.status === 'permission' && !permissionChecked) return false;
+    return true;
+  });
+
+  resultTbody.innerHTML = '';
+  if (filteredData.length) {
+    filteredData.forEach(item => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${item.registerNumber}</td><td>${item.section}</td><td>${item.status.charAt(0).toUpperCase() + item.status.slice(1)}</td>`;
+      resultTbody.appendChild(tr);
+    });
+  } else {
+    resultTbody.innerHTML = '<tr><td colspan="3">None</td></tr>';
+  }
+}
+
+chkPresent.addEventListener('change', filterByCheckbox);
+chkAbsent.addEventListener('change', filterByCheckbox);
+chkPermission.addEventListener('change', filterByCheckbox);
+</script>
+</body>
+</html>
