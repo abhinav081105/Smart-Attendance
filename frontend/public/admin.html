@@ -462,7 +462,10 @@
         data.forEach(s => {
             tbody.innerHTML += `<tr><td style="font-family:monospace">${s.reg}</td><td>${s.name || '--'}</td><td>${s.sectionId?s.sectionId.name:'NA'}</td>
                 <td><span class="${s.detained?'detained-badge':'active-badge'}">${s.detained?'Detained':'Active'}</span></td>
-                <td><button class="btn-danger" onclick="deleteObj('students', '${s._id}')">Purge</button></td></tr>`;
+                <td>
+                    <button class="btn-secondary" style="background:#f1f5f9; color:var(--text-main); font-size: 11px; padding: 4px 8px;" onclick="resetBio('students', '${s._id}')">Reset Bio</button>
+                    <button class="btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="deleteObj('students', '${s._id}')">Purge</button>
+                </td></tr>`;
         });
     }
 
@@ -475,8 +478,25 @@
             const roleColor = u.type === 'admin' ? 'var(--danger)' : (u.type === 'faculty' ? 'var(--primary)' : 'var(--secondary)');
             tbody.innerHTML += `<tr><td><b style="color:${roleColor}">${u.type.toUpperCase()}</b></td><td>${u.adminId||u.facultyId||u.reg}</td><td>${u.mail}</td>
                 <td>${u.faceDescriptor?.length?'✅ Enrolled':'--'}</td>
-                <td><button class="btn-danger" onclick="deleteObj('users', '${u._id}')">Revoke</button></td></tr>`;
+                <td>
+                    ${u.faceDescriptor?.length ? `<button class="btn-secondary" style="background:#f1f5f9; color:var(--text-main); font-size: 11px; padding: 4px 8px;" onclick="resetBio('users', '${u._id}')">Reset Bio</button>` : ''}
+                    <button class="btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="deleteObj('users', '${u._id}')">Revoke</button>
+                </td></tr>`;
         });
+    }
+
+    window.resetBio = async (type, id) => {
+        if(!confirm('Reset face biometric profile for this user? They will need to re-enroll their face.')) return;
+        try {
+            const res = await fetch(`${API_URL}/admin/${type}/${id}/reset-face`, { method: 'PUT' });
+            if (res.ok) {
+                showMsg('Biometric profile cleared');
+                if(type === 'students') loadStudents(); else loadUsers();
+            } else {
+                const d = await res.json();
+                showMsg(d.error || 'Reset failed', true);
+            }
+        } catch(e) { showMsg('Network error', true); }
     }
 
     window.deleteObj = async (type, id) => {

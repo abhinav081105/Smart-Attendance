@@ -175,6 +175,13 @@ router.delete('/students/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.put('/students/:id/reset-face', async (req, res) => {
+  try {
+    await Student.findByIdAndUpdate(req.params.id, { faceDescriptor: [] });
+    res.json({ message: 'Face biometric reset' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.get('/parse-roll/:reg', (req, res) => {
   const result = getStudentDetails(req.params.reg.toUpperCase());
   if (!result) return res.status(400).json({ error: 'Invalid roll number format' });

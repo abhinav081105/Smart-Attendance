@@ -179,17 +179,31 @@ router.post('/enroll-face', async (req, res) => {
 
     let user;
     if (type === 'student' || type === 'cr') {
-      user = await Student.findByIdAndUpdate(userId, { faceDescriptor: descriptor }, { new: true });
+      user = await Student.findById(userId);
     } else {
-      user = await User.findByIdAndUpdate(userId, { faceDescriptor: descriptor }, { new: true });
+      user = await User.findById(userId);
     }
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // SECURITY: If face is already enrolled, verify match before allowing update
+    if (user.faceDescriptor && user.faceDescriptor.length === 128) {
+      const distance = calculateEuclideanDistance(descriptor, user.faceDescriptor);
+      if (distance > 0.5) {
+        return res.status(403).json({ 
+          message: 'Security Alert: Recognition failed. The new scan does not match the original biometric profile. If you need to reset your face data, please contact the administrator.' 
+        });
+      }
+    }
+
+    user.faceDescriptor = descriptor;
+    await user.save();
+
     const userData = user.toObject();
     userData.type = type;
-    res.json({ message: 'Face enrolled successfully!', user: userData });
+    res.json({ message: 'Face biometric synced successfully!', user: userData });
   } catch (err) {
+    console.error('Enroll Error:', err);
     res.status(500).json({ message: 'Face enrollment failed' });
   }
 });
