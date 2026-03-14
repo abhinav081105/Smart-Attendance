@@ -1,0 +1,21 @@
+{
+  "name": "smart-attendence",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "build": "echo No build step needed",
+    "start": "npx serve ./public -p 3000"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "homepage": "https://abhinav081105.github.io/Attendance-managment",
+  "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/browser": "^7.0.2",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/filesystem": "^7.1.4"
+  }
+}

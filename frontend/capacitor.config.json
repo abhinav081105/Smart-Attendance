@@ -1,0 +1,6 @@
+{
+  "appId": "com.example.app",
+  "appName": "smart-attendence",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}

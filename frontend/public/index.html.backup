@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Page</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e3eafc 0%, #f5f7fa 100%);
+      margin: 0;
+      min-height: 100vh;
+    }
+    .container, .summary-container {
+      box-shadow: 0 8px 32px #1976d244, 0 1.5px 8px #0001;
+      border: 1.5px solid #e3eafc;
+    }
+    .container {
+      max-width: 980px;
+      margin: 48px auto 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      padding: 38px 28px 28px 28px;
+      position: relative;
+      overflow: hidden;
+      animation: floatIn 0.7s cubic-bezier(.39,.575,.56,1.000);
+    }
+    @keyframes floatIn {
+      0% { opacity: 0; transform: translateY(40px) scale(0.98);}
+      100% { opacity: 1; transform: translateY(0) scale(1);}
+    }
+    .header-logos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .main-logo {
+      height: 90px;
+      max-width: 340px;
+      object-fit: contain;
+      background: #fff;
+    }
+    .accr-logo {
+      height: 90px;
+      max-width: 540px;
+      object-fit: contain;
+      background: #fff;
+    }
+    @media (max-width: 900px) {
+      .main-logo, .accr-logo {
+        height: 60px;
+        max-width: 95vw;
+      }
+      .header-logos { gap: 10px; }
+    }
+    @media (max-width: 600px) {
+      .main-logo, .accr-logo {
+        height: 38px;
+        max-width: 98vw;
+      }
+      .header-logos { gap: 4px; }
+    }
+    h2 {
+      margin-bottom: 18px;
+      color: #1a237e;
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-shadow: 0 2px 8px #1976d233;
+      animation: fadeInDown 0.7s cubic-bezier(.39,.575,.56,1.000);
+    }
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-30px);}
+      100% { opacity: 1; transform: translateY(0);}
+    }
+    .section-select {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 32px;
+    }
+    .section-select label {
+      font-size: 1.13rem;
+      font-weight: 600;
+      color: #1976d2;
+      letter-spacing: 0.5px;
+    }
+    .section-select select {
+      font-size: 1.13rem;
+      padding: 7px 22px;
+      border-radius: 7px;
+      border: 1.5px solid #b0b0b0;
+      background: #f3f6fa;
+      font-weight: 700;
+      color: #1a237e;
+      outline: none;
+      transition: border 0.2s;
+      box-shadow: 0 1px 4px #1976d211;
+    }
+    .section-select select:focus {
+      border: 2px solid #1976d2;
+      background: #e3eafc;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      background: #fafdff;
+      border-radius: 14px;
+      border: 1.5px solid #e3eafc;
+      overflow: hidden;
+      box-shadow: 0 2px 12px #1976d211;
+      margin-bottom: 18px;
+    }
+    th, td {
+      padding: 14px 16px;
+      border: 1px solid #e0e0e0;
+      text-align: center;
+      font-size: 1.07rem;
+    }
+    th {
+      background: linear-gradient(90deg, #e3eafc 60%, #fafdff 100%);
+      font-weight: 800;
+      color: #1a237e;
+      letter-spacing: 0.7px;
+      border-bottom: 2.5px solid #1976d2;
+    }
+    tbody tr:nth-child(even) {
+      background: #f0f4fa;
+    }
+    tbody tr:hover {
+      background: #dbeafe;
+      transition: background 0.2s;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 10px 22px;
+      margin: 0 2px;
+      border-radius: 7px;
+      font-weight: 700;
+      font-size: 1.07rem;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+      box-shadow: 0 1px 4px #1976d211;
+      outline: none;
+    }
+    button, .back-btn, #downloadBtn {
+      box-shadow: 0 2px 8px #1976d244;
+      border: 1.5px solid #1976d2;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+    button:active, .back-btn:active, #downloadBtn:active {
+      transform: scale(0.97);
+    }
+    .present {
+      background-color: #e0f7e9;
+      color: #222;
+    }
+    .absent {
+      background-color: #ffebee;
+      color: #222;
+    }
+    .permission {
+      background-color: #fff8e1;
+      color: #222;
+    }
+    .selected.present {
+      background-color: #388e3c !important;
+      color: #fff !important;
+      box-shadow: 0 2px 8px #388e3c33;
+      transform: scale(1.05);
+    }
+    .selected.absent {
+      background-color: #b71c1c !important;
+      color: #fff !important;
+      box-shadow: 0 2px 8px #b71c1c33;
+      transform: scale(1.05);
+    }
+    .selected.permission {
+      background-color: #f9a825 !important;
+      color: #fff !important;
+      box-shadow: 0 2px 8px #f9a82533;
+      transform: scale(1.05);
+    }
+    .selected.present, .selected.absent, .selected.permission {
+      box-shadow: 0 0 0 3px #1976d233;
+    }
+    .section-label {
+      font-weight: bold;
+      font-size: 15px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      background-color: #e3eafc;
+      color: #1976d2;
+      letter-spacing: 0.5px;
+    }
+    input[readonly] {
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      text-align: center;
+      width: 140px;
+      margin-left: 8px;
+      font-size: 1.07rem;
+      font-weight: 600;
+      color: #1976d2;
+    }
+    #submitAttendance {
+      background: linear-gradient(90deg, #1976d2 60%, #388e3c 100%);
+      color: #fff;
+      font-size: 1.13rem;
+      padding: 14px 44px;
+      border-radius: 9px;
+      margin-top: 22px;
+      font-weight: 800;
+      letter-spacing: 1.2px;
+      box-shadow: 0 2px 12px #1976d255;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+    #submitAttendance:hover {
+      background: linear-gradient(90deg, #388e3c 60%, #1976d2 100%);
+      box-shadow: 0 4px 18px #1976d255;
+      transform: scale(1.04);
+    }
+    #attendanceSummary {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 1.13rem;
+      color: #1976d2;
+      font-weight: 700;
+      background: #e3eafc;
+      border-radius: 10px;
+      padding: 14px 0;
+      box-shadow: 0 2px 8px #1976d211;
+      letter-spacing: 0.5px;
+    }
+    .count {
+      background: linear-gradient(90deg, #e3eafc 60%, #fafdff 100%);
+      border: 1.5px solid #1976d2;
+      box-shadow: 0 2px 8px #1976d244;
+    }
+    .accent-bar {
+      height: 7px;
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      background: linear-gradient(90deg, #1976d2 0%, #388e3c 100%);
+      margin-bottom: 18px;
+    }
+    @media (max-width: 700px) {
+      .container { padding: 10px 2vw; }
+      table, th, td { font-size: 0.97rem; }
+      h2 { font-size: 1.2rem; }
+      .section-select { flex-direction: column; gap: 8px; }
+      #submitAttendance { padding: 12px 18vw; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div style="text-align:center; margin-bottom:18px;">
+      <div class="header-logos">
+        <img src="lendi-full-logo.png" alt="Lendi College Logo" class="header-logo main-logo">
+        <img src="accreditation.png" alt="Lendi College Logo" class="header-logo accr-logo">
+      </div>
+      <h2>3rd CSE Attendance Sheet</h2>
+    </div>
+    <div style="text-align:center; margin-bottom:18px;">
+      <label for="attendanceDate" style="font-weight:600;color:#1976d2;">Attendance Date:</label>
+      <input type="date" id="attendanceDate" style="padding:6px 12px; border-radius:6px; border:1.5px solid #1976d2;">
+    </div>
+    <div class="section-select">
+      <label for="sectionSelect">Select Section:</label>
+      <select id="sectionSelect">
+        <option value="A">A</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="D">D</option>
+      </select>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Register Number</th>
+            <th>Section</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Permission</th>
+            <th>Status Selected</th>
+          </tr>
+        </thead>
+        <tbody id="attendanceBody"></tbody>
+      </table>
+    </div>
+    <div style="text-align:center;">
+      <button id="submitAttendance">
+        Submit Attendance
+      </button>
+      <!-- Download All Attendance button for admin only -->
+      <button id="downloadAllBtn" style="display:none; margin-left:20px; background: #1976d2; color: #fff;">
+        Download All Attendance
+      </button>
+    </div>
+    <div id="attendanceSummary"></div>
+  </div>
+  <div class="accent-bar"></div>
+  <div style="padding:18px 24px 0 0; text-align:right;">
+    <button id="logoutBtn" style="background:#b71c1c;color:#fff;font-weight:700;padding:8px 22px;border-radius:7px;border:none;cursor:pointer;">
+      Logout
+    </button>
+  </div>
+
+  <script>
+    // Redirect to login if not logged in
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user) {
+      window.location.href = "auth.html";
+    }
+  </script>
+  <script>
+    // Helper: "01"-"99", then "A0"-"A9", "B0"-"B9", etc
+    function generateRollSequence() {
+      const numbers = [];
+      for (let i = 1; i <= 99; i++) numbers.push(i.toString().padStart(2, '0'));
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      for (let l of letters) for (let n = 0; n < 10; n++) numbers.push(l+n);
+      return numbers;
+    }
+    const rollSeq = generateRollSequence();
+
+    // Build regular register numbers: 23KD1A05 + rollSeq
+    const getRegularRegNo = roll => `23KD1A05${roll}`;
+    // Build lateral register numbers: 24KD5A05 + rollSeq
+    const getLateralRegNo = roll => `24KD5A05${roll}`;
+    // Section codes and lateral per section
+    const sections = ['A','B','C','D'];
+    const lateralDist = [
+      { section: 'A', count: 5 }, // 01-06
+      { section: 'B', count: 6 }, // 07-11
+      { section: 'C', count: 6 }, // 12-17
+      { section: 'D', count: 8 }  // 18-22
+    ];
+
+    // 1. Distribute regular students: 66 to A, 66 to B, 66 to C, 82 to D
+    let regIdx = 0, allStudents = [];
+    for(let secIdx = 0; secIdx < 4; secIdx++) {
+      let regPerSection = (secIdx < 3) ? 66 : (280 - 66*3); // 66,66,66,82
+      let regs = [];
+      for(let i=0; i<regPerSection; i++) {
+        regs.push({registerNumber: getRegularRegNo(rollSeq[regIdx++]), section: sections[secIdx]});
+      }
+      allStudents.push({regulars: regs, section: sections[secIdx]});
+    }
+    // 2. Lateral entries: slice appropriate rollSeq segment and distribute per section
+    let lateralOffset = 0;
+    for(let secIdx = 0; secIdx < 4; secIdx++) {
+      let count = lateralDist[secIdx].count;
+      let lateralRegs = [];
+      for(let i=0; i<count; i++) {
+        lateralRegs.push({registerNumber: getLateralRegNo(rollSeq[lateralOffset++]), section: sections[secIdx]});
+      }
+      allStudents[secIdx].laterals = lateralRegs;
+    }
+    // 3. Merge: insert lateral after regulars for each section
+    let merged = [];
+    for(let secIdx = 0; secIdx < 4; secIdx++) {
+      const secObj = allStudents[secIdx];
+      if(secIdx < 3) {
+        merged.push(...secObj.regulars, ...secObj.laterals);
+      } else {
+        // For D section: only up to Q3 for regulars, then laterals up to 25
+        // Find index of Q3 in regulars
+        const lastRegIdx = secObj.regulars.findIndex(stu => stu.registerNumber.endsWith('Q3'));
+        let dRegulars = secObj.regulars.slice(0, lastRegIdx + 1);
+        let dLaterals = secObj.laterals.slice(0, 25);
+        merged.push(...dRegulars, ...dLaterals);
+      }
+    }
+
+    // Detained students to remove
+    const detained = {
+      A: ['23KD1A0536'],
+      B: ['23KD1A0595', '23KD1A05A7', '23KD1A05C4'],
+      C: ['23KD1A05H6', '23KD1A05H9', '23KD1A05I5'],
+      D: [] // No detained students in D
+    };
+
+    // Extra students to add at the end of A
+    const extraA = [
+      { registerNumber: '22KD1A0575', section: 'A' },
+      { registerNumber: '20KD1A05G5', section: 'A' }
+    ];
+
+    // Group students by section for filtering
+    const studentsBySection = { A: [], B: [], C: [], D: [] };
+    merged.forEach(stu => {
+      // Only add if not detained
+      if (!detained[stu.section].includes(stu.registerNumber)) {
+        studentsBySection[stu.section].push(stu);
+      }
+    });
+
+    // Add extra students to A section at the end
+    studentsBySection.A.push(...extraA);
+
+    // Store attendance state for each section (so switching doesn't lose selection)
+    const attendanceState = { A: {}, B: {}, C: {}, D: {} };
+
+    // Render table for a section
+    function renderTable(section) {
+      const tbody = document.getElementById('attendanceBody');
+      tbody.innerHTML = '';
+      studentsBySection[section].forEach(student => {
+        const tr = document.createElement('tr');
+        // Register Number
+        const tdReg = document.createElement('td');
+        tdReg.textContent = student.registerNumber;
+        tr.appendChild(tdReg);
+        // Section
+        const tdSection = document.createElement('td');
+        tdSection.textContent = student.section;
+        tdSection.className = 'section-label';
+        tr.appendChild(tdSection);
+
+        // Create status text box
+        const tdStatusText = document.createElement('td');
+        tdStatusText.colSpan = 3; // Will be moved after the buttons
+
+        // Button helper
+        function createStatusButton(text, className, regNo) {
+          const btn = document.createElement('button');
+          btn.textContent = text;
+          btn.className = className;
+          btn.addEventListener('click', () => {
+            tr.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            attendanceState[section][regNo] = className;
+            // Update status text box
+            statusBox.value = text;
+          });
+          return btn;
+        }
+        // Present
+        const tdPresent = document.createElement('td');
+        tdPresent.appendChild(createStatusButton('Present', 'present', student.registerNumber));
+        tr.appendChild(tdPresent);
+        // Absent
+        const tdAbsent = document.createElement('td');
+        tdAbsent.appendChild(createStatusButton('Absent', 'absent', student.registerNumber));
+        tr.appendChild(tdAbsent);
+        // Permission
+        const tdPerm = document.createElement('td');
+        tdPerm.appendChild(createStatusButton('Permission', 'permission', student.registerNumber));
+        tr.appendChild(tdPerm);
+
+        // Status text box (readonly)
+        const statusBox = document.createElement('input');
+        statusBox.type = 'text';
+        statusBox.readOnly = true;
+        statusBox.style.width = '140px';
+        statusBox.style.textAlign = 'center';
+        statusBox.style.background = '#f5f5f5';
+        statusBox.style.border = '1px solid #ccc';
+        statusBox.style.marginLeft = '8px';
+
+        // Set initial value
+        const prev = attendanceState[section][student.registerNumber];
+        if (prev) {
+          tr.querySelector(`button.${prev}`).classList.add('selected');
+          statusBox.value = prev === 'present' ? 'Present' : prev === 'absent' ? 'Absent' : 'Absent with Permission';
+        } else {
+          tr.querySelector('button.present').classList.add('selected');
+          attendanceState[section][student.registerNumber] = 'present';
+          statusBox.value = 'Present';
+        }
+
+        // Add status box at the end
+        const tdStatus = document.createElement('td');
+        tdStatus.appendChild(statusBox);
+        tr.appendChild(tdStatus);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Initial render
+    let currentSection = 'A';
+    renderTable(currentSection);
+
+    // Section dropdown event
+    document.getElementById('sectionSelect').addEventListener('change', function() {
+      currentSection = this.value;
+      renderTable(currentSection);
+      document.getElementById('attendanceSummary').innerHTML = '';
+    });
+
+    // Submit attendance
+    document.getElementById('submitAttendance').addEventListener('click', function() {
+      const submitBtn = document.getElementById('submitAttendance'); // Ensure submitBtn is defined
+      const tbody = document.getElementById('attendanceBody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      let dateStr = document.getElementById('attendanceDate').value;
+      if (!dateStr) {
+        // fallback to today if not selected
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateStr = `${yyyy}-${mm}-${dd}`;
+      }
+
+      const attendanceData = rows.map(row => {
+        const regNo = row.children[0].textContent;
+        const btns = row.querySelectorAll('button');
+        let status = 'present';
+        if (btns[0].classList.contains('selected')) status = 'present';
+        else if (btns[1].classList.contains('selected')) status = 'absent';
+        else if (btns[2].classList.contains('selected')) status = 'permission';
+        return { registerNumber: regNo, status, section: currentSection }; // <--
+      });
+
+      const section = currentSection;
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      const submittedBy = currentUser.reg || currentUser.facultyId || currentUser.adminId;
+
+      // POST to backend
+      fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: dateStr, section, submittedBy, records: attendanceData })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.message && data.message.toLowerCase().includes('saved')) {
+          submitBtn.textContent = 'Submitted';
+          submitBtn.style.background = '#388e3c';
+          submitBtn.style.color = '#fff';
+          submitBtn.disabled = true;
+          // After collecting attendanceData
+          localStorage.setItem('attendanceData', JSON.stringify(attendanceData));
+          window.location.href = 'summary.html';
+        } else {
+          alert('Failed to submit attendance: ' + (data.message || 'Unknown error'));
+        }
+      })
+      .catch(() => {
+        alert('Failed to connect to backend.');
+      });
+    });
+
+    // Show Download All Attendance button for admin only
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUser && currentUser.type === 'admin') {
+      document.getElementById('downloadAllBtn').style.display = '';
+    }
+
+    // Auto-select preferred section if available
+    const preferredSection = localStorage.getItem('preferredSection');
+    if (preferredSection) {
+      const sectionSelect = document.getElementById('sectionSelect');
+      sectionSelect.value = preferredSection;
+      sectionSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Disable section select for class representatives
+    const currentUserCR = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUserCR && currentUserCR.type === 'cr') {
+      document.getElementById('sectionSelect').disabled = true;
+    }
+
+    // Save selected date to localStorage
+    const selectedDate = document.getElementById('attendanceDate').value;
+    if (selectedDate) {
+      localStorage.setItem('attendanceDate', selectedDate);
+    }
+
+    document.getElementById('attendanceDate').addEventListener('change', function() {
+      if (this.value) {
+        localStorage.setItem('attendanceDate', this.value);
+      }
+    });
+  </script>
+  <script>
+document.getElementById('logoutBtn').onclick = function() {
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('preferredSection');
+  window.location.href = "auth.html";
+};
+</script>
+  <script>
+  document.getElementById('ocrBtn').onclick = async function() {
+    const fileInput = document.getElementById('ocrImage');
+    const resultDiv = document.getElementById('ocrResult');
+    if (!fileInput.files.length) {
+      resultDiv.textContent = "Please select an image.";
+      return;
+    }
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+    resultDiv.textContent = "Detecting...";
+    try {
+      const res = await fetch('/api/ocr', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data.error) {
+        resultDiv.textContent = "OCR failed: " + data.details;
+      } else {
+        // The result may be in data[0].generated_text or similar, depending on API response
+        resultDiv.textContent = "Detected text: " + (data[0]?.generated_text || JSON.stringify(data));
+      }
+    } catch (err) {
+      resultDiv.textContent = "OCR failed: " + err.message;
+    }
+  };
+  </script>
+</body>
+</html>

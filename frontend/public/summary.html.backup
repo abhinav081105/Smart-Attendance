@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Attendance Summary</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e3eafc 0%, #f5f7fa 100%);
+      margin: 0;
+      min-height: 100vh;
+    }
+    .summary-container {
+      max-width: 700px;
+      margin: 48px auto 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 8px 32px #1976d244, 0 1.5px 8px #0001;
+      border: 1.5px solid #e3eafc;
+      padding: 38px 28px 28px 28px;
+      position: relative;
+      overflow: hidden;
+      animation: floatIn 0.7s cubic-bezier(.39,.575,.56,1);
+    }
+    @keyframes floatIn {
+      0% { opacity: 0; transform: translateY(40px) scale(0.98);}
+      100% { opacity: 1; transform: translateY(0) scale(1);}
+    }
+    .header-logo {
+      max-width: 100%;
+      height: 80px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 2px 8px #1976d233);
+    }
+    h2 {
+      margin-bottom: 24px;
+      color: #1a237e;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-align: center;
+      text-shadow: 0 2px 8px #1976d233;
+      animation: fadeInDown 0.7s cubic-bezier(.39,.575,.56,1.000);
+    }
+    @keyframes fadeInDown {
+      0% { opacity: 0; transform: translateY(-30px);}
+      100% { opacity: 1; transform: translateY(0);}
+    }
+    .count {
+      font-size: 1.13rem;
+      margin: 0 0 18px 0;
+      text-align: center;
+      background: linear-gradient(90deg, #e3eafc 60%, #fafdff 100%);
+      border: 1.5px solid #1976d2;
+      box-shadow: 0 2px 8px #1976d244;
+      border-radius: 10px;
+      padding: 14px 0;
+      font-weight: 700;
+      color: #1976d2;
+      letter-spacing: 0.5px;
+    }
+    .label {
+      font-weight: bold;
+      color: #1976d2;
+    }
+    .filter-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .filter-row label {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a237e;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 18px 0 10px 0;
+      background: #fafbfc;
+      border-radius: 14px;
+      border: 1.5px solid #e3eafc;
+      overflow: hidden;
+      box-shadow: 0 2px 12px #1976d211;
+    }
+    th, td {
+      border: 1px solid #e0e0e0;
+      padding: 14px 16px;
+      text-align: center;
+      font-size: 1.07rem;
+    }
+    th {
+      background: linear-gradient(90deg, #e3eafc 60%, #fafdff 100%);
+      font-weight: 800;
+      color: #1a237e;
+      letter-spacing: 0.7px;
+      border-bottom: 2.5px solid #1976d2;
+    }
+    tbody tr:nth-child(even) {
+      background: #f0f4fa;
+    }
+    tbody tr:hover {
+      background: #dbeafe;
+      transition: background 0.2s;
+    }
+    button, .back-btn, #downloadBtn {
+      box-shadow: 0 2px 8px #1976d244;
+      border: 1.5px solid #1976d2;
+      transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.1s;
+    }
+    button:active, .back-btn:active, #downloadBtn:active {
+      transform: scale(0.97);
+    }
+    .back-btn, #downloadBtn {
+      margin-top: 24px;
+      padding: 14px 38px;
+      font-size: 1.13rem;
+      border-radius: 9px;
+      border: none;
+      background: linear-gradient(90deg, #1976d2 60%, #388e3c 100%);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 800;
+      box-shadow: 0 2px 12px #1976d255;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      margin-right: 10px;
+      letter-spacing: 1px;
+    }
+    .back-btn:hover, #downloadBtn:hover {
+      background: linear-gradient(90deg, #388e3c 60%, #1976d2 100%);
+      box-shadow: 0 4px 18px #1976d255;
+      transform: scale(1.04);
+    }
+    @media (max-width: 700px) {
+      .summary-container { padding: 10px 2vw; }
+      table, th, td { font-size: 0.97rem; }
+      h2 { font-size: 1.2rem; }
+      .filter-row { flex-direction: column; gap: 8px; }
+      .back-btn, #downloadBtn { padding: 12px 18vw; }
+    }
+    .accent-bar {
+      height: 7px;
+      width: 100%;
+      border-radius: 8px 8px 0 0;
+      background: linear-gradient(90deg, #1976d2 0%, #388e3c 100%);
+      margin-bottom: 18px;
+    }
+    .selected.present, .selected.absent, .selected.permission {
+      box-shadow: 0 0 0 3px #1976d233;
+    }
+    .top-link {
+      padding:18px 0 0 24px;
+    }
+    .top-link a {
+      color:#1976d2;
+      font-weight:700;
+      text-decoration:none;
+      font-size:1.1rem;
+    }
+  </style>
+
+  <!-- jsPDF + autotable for PDF download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div class="summary-container">
+    <div class="accent-bar"></div>
+    <h2 id="summaryHeading"></h2>
+    <div class="count">
+      <span class="label">Total Students:</span> <span id="totalCount"></span> |
+      <span class="label">Presents:</span> <span id="presentCount"></span> |
+      <span class="label">Absents:</span> <span id="absentCount"></span> |
+      <span class="label">Permission:</span> <span id="permissionCount"></span> |
+      <span class="label">Detained:</span> <span id="detainedCount"></span>
+    </div>
+    <div class="filter-row">
+      <label><input type="checkbox" id="chkPresent" checked> Present</label>
+      <label><input type="checkbox" id="chkAbsent" checked> Absent</label>
+      <label><input type="checkbox" id="chkPermission" checked> Permission</label>
+      <label><input type="checkbox" id="chkDetained" checked> Detained</label>
+    </div>
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>Register Number</th>
+          <th>Section</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Table data goes here; JS populates -->
+      </tbody>
+    </table>
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; margin-top: 24px;">
+      <button id="downloadBtn" class="back-btn">Download PDF</button>
+      <button id="postToAdminBtn" class="back-btn">Post to Admin</button>
+      <button id="backToAttendanceBtn" class="back-btn" style="background:linear-gradient(90deg,#1976d2 60%,#388e3c 100%);">Back to Attendance</button>
+    </div>
+    <!-- Logout button moved to bottom -->
+  </div>
+
+  <!-- Logout button at the bottom in red -->
+  <div style="text-align:center; margin-top: 32px;">
+    <button class="back-btn" id="logoutBtn" style="background:linear-gradient(90deg,#d32f2f 60%,#b71c1c 100%);color:#fff;min-width:220px;">Logout</button>
+  </div>
+  <div style="text-align:center; margin-top: 16px;">
+    <button id="sendWhatsappBtn" class="back-btn" style="background:#25D366;color:#fff;">Send Absentees to WhatsApp</button>
+    <button id="sendGmailBtn" class="back-btn" style="background:#EA4335;color:#fff;">Send Absentees to Gmail</button>
+  </div>
+
+  <script>
+  window.onload = function() {
+    // Redirect to login if not logged in
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user) {
+      window.location.href = "auth.html";
+    }
+
+    // Detained students per section
+    const detainedStudents = {
+      A: ['23KD1A0536'],
+      B: ['23KD1A0595', '23KD1A05A7', '23KD1A05C4'],
+      C: ['23KD1A05H6', '23KD1A05H9', '23KD1A05I5'],
+      D: []
+    };
+
+    // Elements
+    const summaryHeading = document.getElementById('summaryHeading');
+    const totalCount = document.getElementById('totalCount');
+    const presentCount = document.getElementById('presentCount');
+    const absentCount = document.getElementById('absentCount');
+    const permissionCount = document.getElementById('permissionCount');
+    const detainedCount = document.getElementById('detainedCount');
+    const resultTbody = document.querySelector('#resultTable tbody');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const chkPresent = document.getElementById('chkPresent');
+    const chkAbsent = document.getElementById('chkAbsent');
+    const chkPermission = document.getElementById('chkPermission');
+    const chkDetained = document.getElementById('chkDetained');
+
+    // Load attendance data and summary
+    const summary = JSON.parse(localStorage.getItem('attendanceSummary'));
+    const attendanceData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
+    const absentees = attendanceData.filter(row => row.status === 'absent');
+    const permissions = attendanceData.filter(row => row.status === 'permission');
+
+    let absenteesText = "Absentees List:\n";
+    if (absentees.length === 0) {
+      absenteesText += "None\n";
+    } else {
+      absentees.forEach((row, idx) => {
+        absenteesText += `${idx + 1}. ${row.registerNumber} (${row.section})\n`;
+      });
+    }
+
+    let permissionsText = "Permissions List:\n";
+    if (permissions.length === 0) {
+      permissionsText += "None\n";
+    } else {
+      permissions.forEach((row, idx) => {
+        permissionsText += `${idx + 1}. ${row.registerNumber} (${row.section})\n`;
+      });
+    }
+
+    const combinedText = `${absenteesText}\n${permissionsText}`;
+
+    // Section preference logic
+    let section = summary ? summary.section : 'A';
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (currentUser && currentUser.type === 'cr') {
+      const preferredSection = localStorage.getItem('preferredSection');
+      if (preferredSection) section = preferredSection;
+    }
+
+    // Calculate detained count for current section
+    const detainedList = detainedStudents[section] || [];
+
+    // Calculate total counts (not filtered by checkboxes)
+    let presentVal = 0, absentVal = 0, permissionVal = 0;
+    attendanceData.forEach(row => {
+      if (row.status === 'present') presentVal++;
+      else if (row.status === 'absent') absentVal++;
+      else if (row.status === 'permission') permissionVal++;
+    });
+    const detainedVal = detainedList.length;
+
+    // Get the attendance date from localStorage if available, else use today
+    let attendanceDate = localStorage.getItem('attendanceDate');
+    let dateObj;
+    if (attendanceDate) {
+      // attendanceDate is expected in 'YYYY-MM-DD' format
+      const [yyyy, mm, dd] = attendanceDate.split('-');
+      dateObj = new Date(yyyy, mm - 1, dd);
+    } else {
+      dateObj = new Date();
+    }
+    const dateStr = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+    const hour = dateObj.getHours();
+    const session = localStorage.getItem('attendanceSession') || "morning";
+
+    // Set dynamic heading and counts
+    if (attendanceData.length === 0) {
+      summaryHeading.textContent = 'No attendance data found';
+      totalCount.textContent = detainedVal;
+      presentCount.textContent = 0;
+      absentCount.textContent = 0;
+      permissionCount.textContent = 0;
+      detainedCount.textContent = detainedVal;
+    } else {
+      summaryHeading.textContent = `${dateStr} ${session} 3rd CSE ${section} section attendance summary`.toUpperCase();
+      totalCount.textContent = attendanceData.length + detainedVal;
+      presentCount.textContent = presentVal;
+      absentCount.textContent = absentVal;
+      permissionCount.textContent = permissionVal;
+      detainedCount.textContent = detainedVal;
+    }
+
+    // Checkbox filter logic (only filters table, not summary counts)
+    function filterByCheckbox() {
+      const presentChecked = chkPresent.checked;
+      const absentChecked = chkAbsent.checked;
+      const permissionChecked = chkPermission.checked;
+      const detainedChecked = chkDetained.checked;
+
+      let filteredData = attendanceData.filter(item => {
+        if (item.status === 'present' && !presentChecked) return false;
+        if (item.status === 'absent' && !absentChecked) return false;
+        if (item.status === 'permission' && !permissionChecked) return false;
+        return true;
+      });
+
+      // If detained checkbox is checked, add detained students as "Detained" status
+      if (detainedChecked && detainedList.length) {
+        filteredData = filteredData.concat(
+          detainedList.map(regNo => ({
+            registerNumber: regNo,
+            section: section,
+            status: 'Detained'
+          }))
+        );
+      }
+
+      resultTbody.innerHTML = '';
+      if (filteredData.length) {
+        filteredData.forEach(item => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${item.registerNumber}</td><td>${item.section}</td><td>${item.status.charAt(0).toUpperCase() + item.status.slice(1)}</td>`;
+          resultTbody.appendChild(tr);
+        });
+      } else {
+        resultTbody.innerHTML = '<tr><td colspan="3">None</td></tr>';
+      }
+    }
+
+    chkPresent.addEventListener('change', filterByCheckbox);
+    chkAbsent.addEventListener('change', filterByCheckbox);
+    chkPermission.addEventListener('change', filterByCheckbox);
+    chkDetained.addEventListener('change', filterByCheckbox);
+
+    // Initial population of result table
+    filterByCheckbox();
+
+    // Download table as PDF
+    downloadBtn.onclick = function() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 18;
+
+      // Get today's date and time
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-GB');
+      const timeStr = today.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const hourPdf = today.getHours();
+      const sessionPdf = hourPdf >= 12 ? "AFTERNOON" : "MORNING";
+
+      // Use calculated values for counts
+      let presentVal = 0, absentVal = 0, permissionVal = 0;
+      attendanceData.forEach(row => {
+        if (row.status === 'present') presentVal++;
+        else if (row.status === 'absent') absentVal++;
+        else if (row.status === 'permission') permissionVal++;
+      });
+
+      // Title
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`3rd CSE ${section} ${sessionPdf} Attendance Summary`, 105, y, { align: 'center' });
+      y += 10;
+
+      // Summary box
+      doc.setDrawColor(25, 118, 210);
+      doc.setFillColor(227, 234, 252);
+      doc.roundedRect(15, y, 180, 22, 4, 4, 'FD');
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(25, 118, 210);
+      doc.text(`Date: ${dateStr}   Time: ${timeStr}`, 20, y + 7);
+      doc.text(`Total Students: ${attendanceData.length + detainedList.length}`, 20, y + 15);
+      doc.text(`Presents: ${presentVal}`, 80, y + 15);
+      doc.text(`Absents: ${absentVal + permissionVal}`, 120, y + 15);
+      doc.text(`Permissions: ${permissionVal}`, 160, y + 15);
+      doc.text(`Detained: ${detainedList.length}`, 20, y + 21);
+      doc.setTextColor(0, 0, 0);
+      y += 28;
+
+      // Filter for PDF as per checkboxes
+      const presentChecked = chkPresent.checked;
+      const absentChecked = chkAbsent.checked;
+      const permissionChecked = chkPermission.checked;
+      const detainedChecked = chkDetained.checked;
+      let filteredData = attendanceData.filter(item => {
+        if (item.status === 'present' && !presentChecked) return false;
+        if (item.status === 'absent' && !absentChecked) return false;
+        if (item.status === 'permission' && !permissionChecked) return false;
+        return true;
+      });
+      // Add detained students if checked
+      if (detainedChecked && detainedList.length) {
+        filteredData = filteredData.concat(
+          detainedList.map(regNo => ({
+            registerNumber: regNo,
+            section: section,
+            status: 'Detained'
+          }))
+        );
+      }
+      // Group by status
+      const grouped = {
+        present: [],
+        absentWithoutPermission: [],
+        absentWithPermission: [],
+        detained: []
+      };
+      filteredData.forEach(item => {
+        if (item.status === 'present') grouped.present.push(item);
+        else if (item.status === 'absent') grouped.absentWithoutPermission.push(item);
+        else if (item.status === 'permission') grouped.absentWithPermission.push(item);
+        else if (item.status === 'Detained') grouped.detained.push(item);
+      });
+
+      // Helper for section headers
+      function sectionHeader(text) {
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.text(text, 15, y);
+        doc.setFont('helvetica', 'normal');
+        y += 7;
+      }
+
+      // Add each group as separate table
+      if (grouped.present.length) {
+        sectionHeader('PRESENTS');
+        doc.autoTable({
+          head: [['Register Number', 'Section', 'Status']],
+          body: grouped.present.map(item => [
+            item.registerNumber,
+            item.section,
+            'Present'
+          ]),
+          startY: y,
+          theme: 'grid',
+          styles: { fontSize: 11, halign: 'center' },
+          headStyles: { fillColor: [227, 234, 252], textColor: [25, 118, 210] },
+          alternateRowStyles: { fillColor: [245, 247, 250] }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+      if (grouped.absentWithoutPermission.length) {
+        sectionHeader('ABSENTEES WITHOUT PERMISSION');
+        doc.autoTable({
+          head: [['Register Number', 'Section', 'Status']],
+          body: grouped.absentWithoutPermission.map(item => [
+            item.registerNumber,
+            item.section,
+            'Absent'
+          ]),
+          startY: y,
+          theme: 'grid',
+          styles: { fontSize: 11, halign: 'center' },
+          headStyles: { fillColor: [255, 224, 178], textColor: [230, 81, 0] },
+          alternateRowStyles: { fillColor: [250, 245, 245] }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+      if (grouped.absentWithPermission.length) {
+        sectionHeader('ABSENTEES WITH PERMISSION');
+        doc.autoTable({
+          head: [['Register Number', 'Section', 'Status']],
+          body: grouped.absentWithPermission.map(item => [
+            item.registerNumber,
+            item.section,
+            'Permission'
+          ]),
+          startY: y,
+          theme: 'grid',
+          styles: { fontSize: 11, halign: 'center' },
+          headStyles: { fillColor: [187, 222, 251], textColor: [25, 118, 210] },
+          alternateRowStyles: { fillColor: [245, 247, 250] }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+      if (grouped.detained.length) {
+        sectionHeader('DETAINED');
+        doc.autoTable({
+          head: [['Register Number', 'Section', 'Status']],
+          body: grouped.detained.map(item => [
+            item.registerNumber,
+            item.section,
+            'Detained'
+          ]),
+          startY: y,
+          theme: 'grid',
+          styles: { fontSize: 11, halign: 'center' },
+          headStyles: { fillColor: [255, 205, 210], textColor: [211, 47, 47] },
+          alternateRowStyles: { fillColor: [250, 245, 245] }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      doc.save(`3rd_CSE_${section}_${sessionPdf}_${dateStr.replace(/\//g, '-')}_Attendance.pdf`);
+    };
+
+    // Back to Attendance button
+    document.getElementById('backToAttendanceBtn').onclick = function() {
+      window.location.href = "index.html";
+    };
+
+    // Logout button (now at bottom)
+    document.getElementById('logoutBtn').onclick = function() {
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('preferredSection');
+      window.location.href = "auth.html";
+    };
+
+    // Post Attendance to Admin
+    document.getElementById('postToAdminBtn').onclick = async function() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      const attendanceData = JSON.parse(localStorage.getItem('attendanceData')) || [];
+      if (!attendanceData.length) {
+        alert('No attendance data to post!');
+        return;
+      }
+      const section = attendanceData[0].section || (typeof section !== "undefined" ? section : null);
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      const submittedBy = currentUser.reg || currentUser.facultyId || currentUser.adminId;
+      // Prepare records for backend
+      const records = attendanceData.map(row => ({
+        registerNumber: row.registerNumber,
+        status: row.status
+      }));
+      // POST to backend (Render)
+      try {
+        const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: dateStr, section, submittedBy, records })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Attendance posted to admin!');
+        } else {
+          alert('Failed to post attendance: ' + data.message);
+        }
+      } catch (err) {
+        alert('Failed to connect to backend.');
+      }
+    };
+
+    // Get date/session/section for the heading
+    const dateStrMsg = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')}/${dateObj.getFullYear()}`;
+    const sessionMsg = dateObj.getHours() >= 12 ? "afternoon" : "morning";
+    const sectionMsg = `CSE-${section}`;
+
+    // Compose the message
+    const messageHeading = `${dateStrMsg} ${sectionMsg} ${sessionMsg} attendance\n\n${absenteesText}\n${permissionsText}`;
+
+    // WhatsApp button
+    document.getElementById('sendWhatsappBtn').onclick = function() {
+      const message = encodeURIComponent(messageHeading);
+
+      // If on mobile, open WhatsApp app
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = `whatsapp://send?text=${message}`;
+        return;
+      }
+
+      // On desktop, try WhatsApp Desktop app, then fallback to WhatsApp Web
+      const appUrl = `whatsapp://send?text=${message}`;
+      const webUrl = `https://web.whatsapp.com/send?text=${message}`;
+
+      // Try to open WhatsApp Desktop app
+      window.location.href = appUrl;
+
+      // Fallback to WhatsApp Web after 1 second (if app is not installed)
+      setTimeout(function() {
+        window.open(webUrl, '_blank');
+      }, 1000);
+    };
+
+    // Gmail button
+    document.getElementById('sendGmailBtn').onclick = function() {
+      const subject = encodeURIComponent(`${dateStrMsg} ${sectionMsg} ${sessionMsg} attendance`);
+      const body = encodeURIComponent(`${absenteesText}\n${permissionsText}`);
+      if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+      } else {
+        window.open(`https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`, '_blank');
+      }
+    };
+  };
+  </script>
+</body>
+</html>

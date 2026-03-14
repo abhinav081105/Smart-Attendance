@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Global Admin Control - Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #10b981;
+      --danger: #ef4444;
+      --background: #f8fafc;
+      --sidebar: #0f172a;
+      --card: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #f1f5f9;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--background);
+      margin: 0;
+      color: var(--text-main);
+      display: flex;
+    }
+
+    .sidebar {
+      width: 280px;
+      height: 100vh;
+      background: var(--sidebar);
+      color: white;
+      padding: 40px 0;
+      position: fixed;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+      z-index: 1000;
+      transition: all 0.3s ease;
+    }
+
+    .sidebar-header {
+      padding: 0 30px 40px 30px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      color: #6366f1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .sidebar-nav { flex: 1; }
+
+    .tab-btn {
+      width: 100%;
+      padding: 18px 30px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      text-align: left;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover { background: rgba(255,255,255,0.05); color: white; }
+    .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); }
+
+    .main-content {
+      margin-left: 280px;
+      flex: 1;
+      padding: 48px;
+      max-width: 1400px;
+    }
+
+    .header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.05em; margin: 0; color: #0f172a; }
+    h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+
+    .admin-card {
+      background: var(--card);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 32px;
+      border: 1px solid var(--border);
+      transition: transform 0.3s ease;
+    }
+
+    .admin-card:hover { transform: translateY(-2px); }
+
+    .form-inline {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+      padding: 24px;
+      background: #fafafa;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+    }
+
+    input, select {
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      background: white;
+    }
+    input:focus { border-color: var(--primary); outline: none; }
+
+    button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover { background: var(--primary-dark); transform: scale(1.02); }
+    .btn-danger { background: #fee2e2; color: var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th { text-align: left; padding: 18px; font-weight: 800; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); }
+    td { padding: 18px; border-bottom: 1px solid var(--border); font-weight: 600; }
+    tr:hover td { background: #fdfdfd; }
+
+    .message {
+      position: fixed;
+      top: 30px;
+      right: 30px;
+      padding: 16px 24px;
+      border-radius: 16px;
+      color: white;
+      font-weight: 700;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    .detained-badge { background: #fee2e2; color: #b91c1c; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+    .active-badge { background: #dcfce7; color: #15803d; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2001; align-items: center; justify-content: center; }
+    .modal-content { background: white; padding: 40px; border-radius: 28px; width: 90%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+
+    #logoutBtn { background: transparent; color: #94a3b8; border: 1px solid #334155; margin-top: auto; margin: 20px 30px; }
+    #logoutBtn:hover { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+
+    .report-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+    .report-stat-card { background: #f8fafc; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
+    .report-stat-val { font-size: 1.25rem; font-weight: 800; color: var(--primary); display: block; }
+    .report-stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+
+    /* Mobile Responsive Sidebar */
+    @media (max-width: 900px) {
+        .sidebar { width: 80px; }
+        .sidebar span, .tab-btn span { display: none; }
+        .main-content { margin-left: 80px; padding: 24px; }
+        .tab-btn { justify-content: center; padding: 20px 0; }
+    }
+  </style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div id="crModal" class="modal">
+    <div class="modal-content">
+      <h3>Authorize Section CRs</h3>
+      <p id="crSectionName" style="font-weight: 700; color: var(--primary); margin-bottom: 24px;"></p>
+      <div class="form-group">
+        <label style="display:block; margin-bottom:12px; font-weight:700; color: var(--text-muted);">ENTER REGISTER NUMBERS (COMMA SEPARATED)</label>
+        <input type="text" id="crInput" style="width:100%;" placeholder="e.g. 23KD1A0501, 23KD1A0502">
+        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">Students listed here will gain Class Representative privileges.</p>
+      </div>
+      <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button onclick="closeCrModal()" style="background: #f1f5f9; color: var(--text-main);">Dismiss</button>
+        <button onclick="saveCRs()">Update Permissions</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-header" style="flex-direction: column; align-items: center; gap: 8px; background: white; margin: 0 15px 20px 15px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+      <img src="college-logo.png" style="height: 60px; width: auto; object-fit: contain;">
+      <span style="font-size: 0.8rem; margin-top: 5px; color: var(--text-main); font-weight: 800; letter-spacing: 0.05em;">ADMIN CONTROL</span>
+    </div>
+    <div class="sidebar-nav">
+      <button class="tab-btn active" data-tab="sections">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+        <span>Sections</span>
+      </button>
+      <button class="tab-btn" data-tab="students">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
+        <span>Students</span>
+      </button>
+      <button class="tab-btn" data-tab="users">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-1.496-7.448a4.805 4.805 0 010-9.607m4.05 13.112a8.986 8.986 0 011.02 3.937m0-11c0 3.517 1.009 6.799 2.753 9.571m1.496-7.448a4.805 4.805 0 010-9.607m-4.05 13.112a8.986 8.986 0 01-1.02 3.937"/></svg>
+        <span>Access & Security</span>
+      </button>
+      <button class="tab-btn" data-tab="geofencing">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="11" r="3"/><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+        <span>Geo-Tagging</span>
+      </button>
+      <button class="tab-btn" data-tab="reports">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <span>Reports</span>
+      </button>
+    </div>
+    <button id="logoutBtn">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg>
+        <span>Sign Out</span>
+    </button>
+  </div>
+
+  <div class="main-content">
+    <div class="header-bar">
+      <h2>Administrative Dashboard</h2>
+      <div id="statusMsg" class="message"></div>
+    </div>
+
+    <!-- SECTIONS TAB -->
+    <div id="sections" class="tab-content active">
+      <div class="admin-card">
+        <h3>Department Branches</h3>
+        <form id="addBranchForm" class="form-inline">
+          <input type="text" id="branchCode" placeholder="Branch Code (e.g. 05)" required>
+          <input type="text" id="branchName" placeholder="Full Name (e.g. CSE)" required>
+          <button type="submit">Add New Branch</button>
+        </form>
+        <table>
+          <thead><tr><th>ID</th><th>Department Name</th><th>Control</th></tr></thead>
+          <tbody id="branchesTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="admin-card">
+        <h3>Classroom Sections</h3>
+        <form id="addSectionForm" class="form-inline">
+          <select id="sectionYear" required><option value="">Year</option><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option></select>
+          <select id="sectionBranch" required><option value="">Department</option></select>
+          <input type="text" id="sectionName" placeholder="Sec Name (A, B...)" required>
+          <button type="submit">Initialize Section</button>
+        </form>
+        <table>
+          <thead><tr><th>Year</th><th>Branch</th><th>Sec</th><th>Active CRs</th><th>Actions</th></tr></thead>
+          <tbody id="sectionsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STUDENTS TAB -->
+    <div id="students" class="tab-content" style="display:none">
+      <div class="admin-card" style="background: #fdfdfd; border-left: 5px solid var(--secondary);">
+        <h3>Batch Registration (Bulk)</h3>
+        <form id="bulkGenerateForm" class="form-inline" style="background:transparent; border:none; padding:0">
+          <input type="text" id="bulkPrefix" placeholder="Roll Prefix (23KD1A05)" required>
+          <input type="number" id="bulkStart" placeholder="Range Start" required style="width: 120px">
+          <input type="number" id="bulkEnd" placeholder="Range End" required style="width: 120px">
+          <input type="text" id="bulkSection" placeholder="Target Sec" required style="width:100px">
+          <button type="submit" style="background: var(--secondary)">Auto-Generate Students</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h3>Student Database</h3>
+        <div style="margin-bottom: 24px; display: flex; align-items: center; gap: 12px; padding: 16px; background: #f8fafc; border-radius: 12px;">
+          <label>Narrow Down View: </label>
+          <select id="filterStudentSection" style="flex: 1"><option value="">Show All Registered Students</option></select>
+        </div>
+        <table>
+          <thead><tr><th>Roll Number</th><th>Student Name</th><th>Section</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="studentsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- USERS & SECURITY TAB -->
+    <div id="users" class="tab-content" style="display:none">
+      <div class="admin-card" style="border-left: 5px solid var(--primary);">
+        <h3 style="justify-content: space-between;">
+           Registration Portal Permissions
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <span id="regStatusBadge" class="active-badge">Online</span>
+            <button id="toggleRegBtn" onclick="toggleRegistration()" style="font-size: 0.8rem;">Lock Portal</button>
+          </div>
+        </h3>
+        <p style="color: var(--text-muted);">Toggling this status will immediately enable or disable public self-registration for faculty members.</p>
+      </div>
+
+      <div class="admin-card">
+        <h3>System Administrator Setup</h3>
+        <form id="addAdminForm" class="form-inline">
+          <input type="text" id="newAdminId" placeholder="Admin Username" required>
+          <input type="text" id="newAdminName" placeholder="Full Profile Name" required>
+          <input type="password" id="newAdminPass" placeholder="Master Password" required>
+          <button type="submit">Grant Admin Access</button>
+        </form>
+      </div>
+
+      <div class="admin-card">
+        <h3>Authorized Portal Users</h3>
+        <table>
+          <thead><tr><th>Role</th><th>Identifier</th><th>System Email</th><th>Biometrics</th><th>Control</th></tr></thead>
+          <tbody id="usersTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GEO-TAGGING TAB -->
+    <div id="geofencing" class="tab-content" style="display:none">
+      <div class="admin-card">
+        <h3>Smart Boundary Configuration</h3>
+        <div style="margin-bottom: 24px;">
+            <select id="geoSectionSelect" style="width: 100%; padding: 18px;" onchange="loadGeoSettings(this.value)">
+                <option value="">-- Choose Section to Adjust Geofence --</option>
+            </select>
+        </div>
+
+        <div id="geoDetailsArea" style="display: none; animation: slideIn 0.4s ease-out;">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px;">
+            <div class="admin-card" style="padding:0; overflow:hidden;">
+              <div id="geoMap" style="height: 400px; width: 100%;"></div>
+              <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                <div><label>Lat</label><input type="text" id="geoLat" style="width:100%" oninput="updateMapFromInputs()"></div>
+                <div><label>Lng</label><input type="text" id="geoLng" style="width:100%" oninput="updateMapFromInputs()"></div>
+                <div><label>Radius (m)</label><input type="number" id="geoRadius" style="width:100%"></div>
+              </div>
+            </div>
+
+            <div class="admin-card">
+              <h3>Session Window</h3>
+              <div style="margin-bottom: 20px;">
+                <label>Clock-In Starts</label>
+                <input type="time" id="geoStart" style="width:100%; padding: 16px;">
+              </div>
+              <div style="margin-bottom: 32px;">
+                <label>Clock-In Ends</label>
+                <input type="time" id="geoEnd" style="width:100%; padding: 16px;">
+              </div>
+              <button onclick="saveGeoSettings()" style="width: 100%; padding: 20px; background: var(--secondary)">Commit Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div id="reports" class="tab-content" style="display:none">
+        <div class="admin-card">
+            <h3 style="justify-content: space-between;">
+                Attendance Logs & Analytics
+                <button onclick="loadAttendanceReports()" style="font-size: 0.8rem; background: var(--secondary)">Refresh Data</button>
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">View all attendance records submitted by CRs and Faculty members.</p>
+            
+            <div id="reportsList" style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Reports will load here -->
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:5000/api';
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user || user.type !== 'admin') window.location.href = "auth.html";
+
+    // Navigation
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.onclick = () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).style.display = 'block';
+        if(btn.dataset.tab === 'geofencing' && geoMap) setTimeout(() => geoMap.invalidateSize(), 200);
+        if(btn.dataset.tab === 'reports') loadAttendanceReports();
+      };
+    });
+
+    function showMsg(msg, isError = false) {
+      const el = document.getElementById('statusMsg');
+      el.textContent = msg;
+      el.style.background = isError ? 'var(--danger)' : 'var(--secondary)';
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 3000);
+    }
+
+    // Load Data Helpers
+    async function loadBranches() {
+      const res = await fetch(`${API_URL}/admin/branches`);
+      const data = await res.json();
+      const tbody = document.getElementById('branchesTableBody');
+      const bSelect = document.getElementById('sectionBranch');
+      
+      tbody.innerHTML = '';
+      bSelect.innerHTML = '<option value="">Choose Department</option>';
+      data.forEach(b => {
+        tbody.innerHTML += `<tr><td>${b.code}</td><td>${b.name}</td><td><button class="btn-danger" onclick="deleteObj('branches', '${b._id}')">Remove</button></td></tr>`;
+        bSelect.add(new Option(b.name, b.code));
+      });
+    }
+
+    async function loadSections() {
+      const res = await fetch(`${API_URL}/admin/sections`);
+      const data = await res.json();
+      window.allSections = data;
+      const tbody = document.getElementById('sectionsTableBody');
+      const fSelect = document.getElementById('filterStudentSection');
+      const gSelect = document.getElementById('geoSectionSelect');
+
+      tbody.innerHTML = '';
+      fSelect.innerHTML = '<option value="">All Registered Students</option>';
+      gSelect.innerHTML = '<option value="">-- Choose Section --</option>';
+
+      data.forEach(s => {
+        const title = `Year ${s.year} ${s.branchCode}-${s.name}`;
+        tbody.innerHTML += `<tr><td>${s.year}</td><td>${s.branchCode}</td><td>${s.name}</td><td>${s.crs.join(', ') || 'None'}</td>
+          <td style="display:flex; gap:8px;">
+            <button onclick="openCrModal('${s._id}', '${title}', '${s.crs.join(', ')}')">Manage CRs</button>
+            <button class="btn-danger" onclick="deleteObj('sections', '${s._id}')">Kill</button>
+          </td></tr>`;
+        fSelect.add(new Option(title, s._id));
+        gSelect.add(new Option(title, s._id));
+      });
+    }
+
+    async function loadStudents() {
+        const sId = document.getElementById('filterStudentSection').value;
+        const res = await fetch(`${API_URL}/admin/students${sId?'?sectionId='+sId:''}`);
+        const data = await res.json();
+        const tbody = document.getElementById('studentsTableBody');
+        tbody.innerHTML = '';
+        data.forEach(s => {
+            tbody.innerHTML += `<tr><td style="font-family:monospace">${s.reg}</td><td>${s.name || '--'}</td><td>${s.sectionId?s.sectionId.name:'NA'}</td>
+                <td><span class="${s.detained?'detained-badge':'active-badge'}">${s.detained?'Detained':'Active'}</span></td>
+                <td><button class="btn-danger" onclick="deleteObj('students', '${s._id}')">Purge</button></td></tr>`;
+        });
+    }
+
+    async function loadUsers() {
+        const res = await fetch(`${API_URL}/admin/users`);
+        const data = await res.json();
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '';
+        data.forEach(u => {
+            const roleColor = u.type === 'admin' ? 'var(--danger)' : (u.type === 'faculty' ? 'var(--primary)' : 'var(--secondary)');
+            tbody.innerHTML += `<tr><td><b style="color:${roleColor}">${u.type.toUpperCase()}</b></td><td>${u.adminId||u.facultyId||u.reg}</td><td>${u.mail}</td>
+                <td>${u.faceDescriptor?.length?'✅ Enrolled':'--'}</td>
+                <td><button class="btn-danger" onclick="deleteObj('users', '${u._id}')">Revoke</button></td></tr>`;
+        });
+    }
+
+    window.deleteObj = async (type, id) => {
+        if(!confirm('This action is permanent. Proceed?')) return;
+        try {
+            const endpoint = (type === 'branches' || type === 'sections' || type === 'students' || type === 'users') ? 'admin' : 'attendance';
+            await fetch(`${API_URL}/${endpoint}/${type}/${id}`, { method: 'DELETE' });
+            showMsg('Object deleted');
+            if(type==='branches') loadBranches(); else if(type==='sections') loadSections(); else if(type==='students') loadStudents(); else if(type==='users') loadUsers(); else loadAttendanceReports();
+        } catch(e) { showMsg('Delete failed', true); }
+    }
+
+    // Reports Logic
+    async function loadAttendanceReports() {
+        const res = await fetch(`${API_URL}/attendance/all`);
+        const data = await res.json();
+        const container = document.getElementById('reportsList');
+        container.innerHTML = '';
+
+        if(data.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-muted);">No attendance records found in the database.</div>';
+            return;
+        }
+
+        // Sort by date desc
+        data.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+        data.forEach(report => {
+            const p = report.records.filter(r => r.status === 'present').length;
+            const a = report.records.filter(r => r.status === 'absent').length;
+            const l = report.records.length;
+            const perc = l > 0 ? Math.round((p/l)*100) : 0;
+            const finalized = report.finalized ? ' <span class="active-badge" style="font-size: 0.6rem; vertical-align: middle;">POSTED</span>' : '';
+
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            card.style = `border-left: 5px solid ${perc > 75 ? 'var(--secondary)' : (perc > 50 ? 'var(--accent)' : 'var(--danger)')}; margin-bottom: 15px; padding: 20px;`;
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 1.1rem;">${report.section} ${finalized}</h4>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 4px 0;">Submitted by: ${report.submittedBy} on ${report.date}</p>
+                    </div>
+                    <button class="btn-danger" style="padding: 6px 12px; font-size: 0.75rem;" onclick="deleteObj('delete', '${report._id}')">Purge Log</button>
+                </div>
+                <div class="report-stat-grid" style="margin-top: 15px;">
+                    <div class="report-stat-card"><span class="report-stat-val">${l}</span><span class="report-stat-label">Strength</span></div>
+                    <div class="report-stat-card"><span class="report-stat-val" style="color:var(--secondary)">${p}</span><span class="report-stat-label">Presents</span></div>
+                    <div class="report-stat-card"><span class="report-stat-val" style="color:var(--danger)">${perc}%</span><span class="report-stat-label">Attendance</span></div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    // Modals
+    let currentCrId = null;
+    window.openCrModal = (id, name, crs) => { currentCrId = id; document.getElementById('crSectionName').innerText = name; document.getElementById('crInput').value = crs; document.getElementById('crModal').style.display='flex'; }
+    window.closeCrModal = () => document.getElementById('crModal').style.display='none';
+    window.saveCRs = async () => {
+        const crs = document.getElementById('crInput').value.split(',').map(s=>s.trim().toUpperCase()).filter(x=>x);
+        await fetch(`${API_URL}/admin/sections/${currentCrId}/crs`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({crs}) });
+        showMsg('Credentials Updated'); loadSections(); closeCrModal();
+    }
+
+    // Geofencing
+    let geoMap, geoMarker;
+    window.loadGeoSettings = (sId) => {
+        if(!sId) { document.getElementById('geoDetailsArea').style.display='none'; return; }
+        const s = window.allSections.find(x=>x._id===sId);
+        document.getElementById('geoDetailsArea').style.display='block';
+        document.getElementById('geoStart').value = s.timeWindow?.start || '09:00';
+        document.getElementById('geoEnd').value = s.timeWindow?.end || '17:00';
+        document.getElementById('geoRadius').value = s.location?.radius || 100;
+        
+        setTimeout(() => {
+            if(!geoMap) {
+                geoMap = L.map('geoMap').setView([17, 82], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(geoMap);
+                geoMap.on('click', e => setMarker(e.latlng.lat, e.latlng.lng));
+            }
+            if(s.location?.lat) {
+                geoMap.setView([s.location.lat, s.location.lng], 16);
+                setMarker(s.location.lat, s.location.lng);
+            } else {
+                navigator.geolocation.getCurrentPosition(p => geoMap.setView([p.coords.latitude, p.coords.longitude], 16));
+            }
+        }, 300);
+    }
+    function setMarker(lat, lng) {
+        if(geoMarker) geoMap.removeLayer(geoMarker);
+        geoMarker = L.marker([lat, lng]).addTo(geoMap);
+        document.getElementById('geoLat').value = lat.toFixed(6);
+        document.getElementById('geoLng').value = lng.toFixed(6);
+    }
+    window.saveGeoSettings = async () => {
+        const payload = {
+            timeWindow: { start: document.getElementById('geoStart').value, end: document.getElementById('geoEnd').value },
+            location: { lat: parseFloat(document.getElementById('geoLat').value), lng: parseFloat(document.getElementById('geoLng').value), radius: parseInt(document.getElementById('geoRadius').value) }
+        };
+        const sId = document.getElementById('geoSectionSelect').value;
+        await fetch(`${API_URL}/admin/sections/${sId}/settings`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        showMsg('Security configurations saved'); loadSections();
+    }
+
+    // Registration Toggle
+    let regEnabled = true;
+    async function loadReg() {
+        const res = await fetch(`${API_URL}/admin/settings/registration`);
+        const data = await res.json();
+        regEnabled = data.registrationEnabled;
+        document.getElementById('regStatusBadge').innerText = regEnabled ? 'Online' : 'Offline';
+        document.getElementById('regStatusBadge').className = regEnabled ? 'active-badge' : 'detained-badge';
+        document.getElementById('toggleRegBtn').innerText = regEnabled ? 'Lock Portal' : 'Unlock Portal';
+    }
+    window.toggleRegistration = async () => {
+        await fetch(`${API_URL}/admin/settings/registration`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({enabled: !regEnabled}) });
+        loadReg(); showMsg('Portal state updated');
+    }
+
+    // Forms
+    document.getElementById('addBranchForm').onsubmit = async (e) => {
+        e.preventDefault();
+        await fetch(`${API_URL}/admin/branches`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code: document.getElementById('branchCode').value, name: document.getElementById('branchName').value}) });
+        loadBranches(); e.target.reset();
+    }
+    document.getElementById('addSectionForm').onsubmit = async (e) => {
+        e.preventDefault();
+        await fetch(`${API_URL}/admin/sections`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({year: document.getElementById('sectionYear').value, branchCode: document.getElementById('sectionBranch').value, name: document.getElementById('sectionName').value, crs:[]}) });
+        loadSections(); e.target.reset();
+    }
+    document.getElementById('addAdminForm').onsubmit = async (e) => {
+        e.preventDefault();
+        await fetch(`${API_URL}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'admin', adminId: document.getElementById('newAdminId').value, name: document.getElementById('newAdminName').value, pass: document.getElementById('newAdminPass').value, creatorId: user._id}) });
+        loadUsers(); e.target.reset(); showMsg('Admin Account Provisioned');
+    }
+
+    document.getElementById('filterStudentSection').onchange = loadStudents;
+    document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); window.location.href="auth.html"; };
+
+    // Start
+    loadBranches(); loadSections(); loadStudents(); loadUsers(); loadReg(); loadAttendanceReports();
+  </script>
+</body>
+</html>

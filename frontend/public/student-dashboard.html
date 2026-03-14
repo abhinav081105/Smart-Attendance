@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Portal | Smart Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #10b981;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --background: #fdfdfd;
+      --card: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #f1f5f9;
+      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      margin: 0;
+      color: var(--text-main);
+      padding: 0;
+      min-height: 100vh;
+    }
+
+    .top-nav {
+      background: var(--card);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .glass-card {
+      background: var(--card);
+      border-radius: 28px;
+      padding: 40px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .header-section {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header-section h2 {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      color: var(--text-main);
+    }
+
+    .profile-badge {
+      display: inline-block;
+      margin-top: 8px;
+      background: #eef2ff;
+      color: var(--primary);
+      padding: 6px 16px;
+      border-radius: 99px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .info-group {
+      background: #fafafa;
+      padding: 24px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+      border: 1px solid var(--border);
+    }
+
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-bottom: 8px; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .form-control {
+      width: 100%;
+      padding: 14px 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .form-control:focus { border-color: var(--primary); outline: none; }
+    .form-control:disabled { background: #fdfdfd; color: #94a3b8; border-color: transparent; }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
+      font-weight: 800;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
+
+    .face-panel {
+        background: #0f172a;
+        color: white;
+        padding: 32px;
+        border-radius: 24px;
+        margin-top: 32px;
+    }
+
+    .face-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .btn-face { background: rgba(255,255,255,0.1); color: white; }
+    .btn-face:hover { background: rgba(255,255,255,0.2); }
+    .btn-face-success { background: var(--secondary); color: white; }
+
+    .btn-logout { background: transparent; color: var(--danger); border: 2px solid #fee2e2; margin-top: 24px; }
+    .btn-logout:hover { background: #fef2f2; }
+
+    /* Face Modal Overlay */
+    #faceModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+    .cam-box { position: relative; width: 100%; max-width: 480px; aspect-ratio: 4/3; background: #000; border-radius: 24px; overflow: hidden; border: 4px solid var(--primary); }
+    video#webcam { width: 100%; height: 100%; object-fit: cover; }
+    canvas#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+    .cam-controls { margin-top: 30px; display: flex; gap: 15px; }
+    .hint-text { color: white; margin-bottom: 15px; font-weight: 700; font-size: 1.25rem; }
+
+    @media (max-width: 600px) {
+        .container { padding: 0; margin: 0; }
+        .glass-card { border-radius: 0; padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+     <div style="font-weight: 800; color: var(--primary); letter-spacing: -0.05em; font-size: 1.1rem;">LENDI PORTAL</div>
+     <button onclick="logout()" style="background:none; border:none; font-weight:700; color:var(--text-muted); cursor:pointer;">Sign Out</button>
+  </div>
+
+  <div class="container">
+    <div class="glass-card">
+      <div class="header-section">
+        <img src="college-logo.png" style="height: 100px; width: auto; margin-bottom: 24px;">
+        <h2 id="welcomeText" style="text-transform: uppercase; line-height: 1.1; font-weight: 800; font-size: 2.2rem; letter-spacing: -0.02em; color: #0f172a;">Student Portal</h2>
+        <div style="margin-top: 12px;">
+            <span id="studentRole" class="profile-badge" style="background: #eff6ff; color: #2563eb; padding: 8px 20px; font-weight: 800; letter-spacing: 0.05em;">OFFICIAL STUDENT</span>
+        </div>
+      </div>
+
+      <div class="info-group">
+        <div class="form-group">
+          <label>Institutional Identifier</label>
+          <input type="text" class="form-control" id="displayReg" disabled>
+        </div>
+        <div class="form-group">
+          <label>Campus Email</label>
+          <input type="text" class="form-control" id="displayMail" disabled>
+        </div>
+        <hr style="border:0; border-top:1px solid var(--border); margin: 32px 0;">
+        <div class="form-group">
+          <label>Full Verified Name</label>
+          <input type="text" class="form-control" id="editName" placeholder="As per official records">
+        </div>
+        <div class="form-group">
+          <label>Mobile Number</label>
+          <input type="tel" class="form-control" id="editPhone" placeholder="For notifications">
+        </div>
+        
+        <button class="btn btn-primary" id="saveBtn">Apply Changes</button>
+        <div id="msg" style="text-align:center; margin-top:15px; font-weight:700;"></div>
+      </div>
+
+      <div class="face-panel">
+        <label style="color:rgba(255,255,255,0.6); font-weight:800; display:block; margin-bottom:16px;">SECURE AUTHENTICATION</label>
+        <div class="face-grid">
+          <button class="btn btn-face" id="enrollBtn">Sync Face</button>
+          <button class="btn btn-face-success" id="markAttendanceBtn">Mark Present</button>
+        </div>
+        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 15px; text-align:center;" id="faceStatus">
+          Biometric record: <span style="color: var(--accent);">Pending registration</span>
+        </p>
+      </div>
+
+      <div class="info-group" style="margin-top:24px; border: 1px solid #fee2e2;">
+        <label style="color:var(--danger)">Security Access</label>
+        <div class="form-group" style="margin-top:15px">
+            <input type="password" class="form-control" id="oldPass" placeholder="Current Secret Key">
+        </div>
+        <div class="form-group">
+            <input type="password" class="form-control" id="newPass" placeholder="New Secret Key">
+        </div>
+        <button class="btn" style="background:#0f172a; color:white;" id="changePassBtn">Reset Password</button>
+        <p id="passMsg" style="text-align:center; margin-top:15px; font-weight:700; font-size:0.85rem;"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="faceModal">
+    <div class="hint-text" id="hintText">System Initializing...</div>
+    <div class="cam-box">
+      <video id="webcam" autoplay muted playsinline></video>
+      <canvas id="overlay"></canvas>
+    </div>
+    <div class="cam-controls">
+      <button class="btn btn-face-success" id="captureBtn" style="width: auto; padding: 12px 40px;" disabled>Authorize Face</button>
+      <button class="btn" onclick="closeCam()" style="width: auto; background: var(--danger); color: white;">Exit</button>
+    </div>
+  </div>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user) window.location.href = "auth.html";
+
+    document.getElementById('welcomeText').textContent = user.name || 'Student Portal';
+    document.getElementById('displayReg').value = user.reg || user.facultyId || user.adminId;
+    document.getElementById('displayMail').value = user.mail;
+    document.getElementById('editName').value = user.name || '';
+    document.getElementById('editPhone').value = user.phone || '';
+    document.getElementById('studentRole').textContent = `OFFICIAL ${user.type.toUpperCase()}`;
+
+    const msgEl = document.getElementById('msg');
+
+    document.getElementById('saveBtn').onclick = async () => {
+      const name = document.getElementById('editName').value.trim();
+      const phone = document.getElementById('editPhone').value.trim();
+      
+      const res = await fetch('http://localhost:5000/api/auth/update-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, type: user.type, name, phone })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        msgEl.textContent = "Profile verified & updated!";
+        msgEl.style.color = "var(--secondary)";
+        user.name = name;
+        user.phone = phone;
+        localStorage.setItem('currentUser', JSON.stringify(data.user));
+        document.getElementById('welcomeText').textContent = name;
+      } else {
+        msgEl.textContent = "Validation failed. Try again.";
+        msgEl.style.color = "var(--danger)";
+      }
+    };
+
+    // FACE LOGIC
+    let modelsLoaded = false;
+    let stream = null;
+    let currentDescriptor = null;
+    let isEnrollmentMode = false;
+
+    function updateFaceStatus() {
+      const statusEl = document.getElementById('faceStatus');
+      if (user.faceDescriptor && user.faceDescriptor.length > 0) {
+        statusEl.innerHTML = `Biometric record: <span style="color: var(--secondary);">Verified ✅</span>`;
+        document.getElementById('enrollBtn').textContent = "Update Bio-Profile";
+      }
+    }
+    updateFaceStatus();
+
+    async function loadModels() {
+      if(modelsLoaded) return;
+      document.getElementById('hintText').textContent = "Syncing AI Core...";
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      modelsLoaded = true;
+    }
+
+    async function openCam(enrollMode = false) {
+      isEnrollmentMode = enrollMode;
+      document.getElementById('faceModal').style.display = 'flex';
+      await loadModels();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+        document.getElementById('webcam').srcObject = stream;
+        startDetection();
+      } catch (err) { alert("Camera Permission Required"); closeCam(); }
+    }
+
+    function closeCam() {
+      if(stream) stream.getTracks().forEach(t => t.stop());
+      document.getElementById('faceModal').style.display = 'none';
+    }
+
+    function startDetection() {
+      const v = document.getElementById('webcam');
+      const c = document.getElementById('overlay');
+      const size = { width: v.offsetWidth, height: v.offsetHeight };
+      faceapi.matchDimensions(c, size);
+      
+      const i = setInterval(async () => {
+        if (document.getElementById('faceModal').style.display === 'none') { clearInterval(i); return; }
+        const detections = await faceapi.detectAllFaces(v, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+        c.getContext('2d').clearRect(0,0,c.width,c.height);
+        faceapi.draw.drawDetections(c, faceapi.resizeResults(detections, size));
+        if (detections.length) {
+          document.getElementById('hintText').textContent = "Identity Locked";
+          document.getElementById('captureBtn').disabled = false;
+          currentDescriptor = detections[0].descriptor;
+        } else {
+          document.getElementById('hintText').textContent = "Scanning...";
+          document.getElementById('captureBtn').disabled = true;
+        }
+      }, 200);
+    }
+
+    document.getElementById('enrollBtn').onclick = () => openCam(true);
+    document.getElementById('markAttendanceBtn').onclick = () => openCam(false);
+
+    document.getElementById('captureBtn').onclick = async () => {
+      let lat, lng;
+      try {
+        const p = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej));
+        lat = p.coords.latitude; lng = p.coords.longitude;
+      } catch(e){}
+
+      const res = await fetch(`http://localhost:5000/api/auth/${isEnrollmentMode?'enroll-face':'mark-attendance-face'}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, type: user.type, descriptor: Array.from(currentDescriptor), latitude:lat, longitude:lng })
+      });
+      if (res.ok) {
+        if(isEnrollmentMode) { user.faceDescriptor = Array.from(currentDescriptor); localStorage.setItem('currentUser', JSON.stringify(user)); updateFaceStatus(); }
+        alert("Operation Successful");
+      } else {
+        const d = await res.json(); alert(d.message || "Failed");
+      }
+      closeCam();
+    };
+
+    window.logout = () => { localStorage.clear(); window.location.href="auth.html"; };
+  </script>
+</body>
+</html>

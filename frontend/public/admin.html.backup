@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Panel - Attendance</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #e3eafc 0%, #f5f7fa 100%);
+      margin: 0;
+      min-height: 100vh;
+    }
+    .admin-container {
+      max-width: 900px;
+      margin: 48px auto 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 8px 32px #1976d244, 0 1.5px 8px #0001;
+      border: 1.5px solid #e3eafc;
+      padding: 38px 28px 28px 28px;
+      position: relative;
+      overflow: hidden;
+      animation: floatIn 0.7s cubic-bezier(.39,.575,.56,1.000);
+    }
+    h2 {
+      margin-bottom: 24px;
+      color: #1a237e;
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-align: center;
+      text-shadow: 0 2px 8px #1976d233;
+    }
+    .section-block {
+      margin-bottom: 32px;
+      padding: 18px;
+      border-radius: 12px;
+      background: #fafdff;
+      box-shadow: 0 2px 12px #1976d111;
+      border: 1.5px solid #e3eafc;
+    }
+    label {
+      font-weight: 600;
+      color: #1976d2;
+      margin-right: 8px;
+    }
+    select, input {
+      padding: 7px 12px;
+      border-radius: 7px;
+      border: 1.5px solid #b0b0b0;
+      background: #f3f6fa;
+      font-size: 1.07rem;
+      font-weight: 600;
+      color: #1a237e;
+      outline: none;
+      margin-right: 12px;
+      margin-bottom: 8px;
+    }
+    button {
+      background: linear-gradient(90deg, #1976d2 60%, #388e3c 100%);
+      color: #fff;
+      font-size: 1.07rem;
+      padding: 10px 22px;
+      border-radius: 7px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .logout-btn {
+      background: #b71c1c;
+      color: #fff;
+      float: right;
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    .msg {
+      color: #388e3c;
+      font-weight: 600;
+      margin-left: 12px;
+    }
+    .admin-actions {
+      text-align: right;
+      margin-bottom: 18px;
+    }
+    .header-logos {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+    .main-logo {
+      height: 90px;
+      max-width: 340px;
+      object-fit: contain;
+      background: #fff;
+    }
+    .accr-logo {
+      height: 90px;
+      max-width: 540px;
+      object-fit: contain;
+      background: #fff;
+    }
+    @media (max-width: 900px) {
+      .main-logo, .accr-logo {
+        height: 60px;
+        max-width: 95vw;
+      }
+      .header-logos { gap: 10px; }
+    }
+    @media (max-width: 600px) {
+      .main-logo, .accr-logo {
+        height: 38px;
+        max-width: 98vw;
+      }
+      .header-logos { gap: 4px; }
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="header-logos">
+      <img src="lendi-full-logo.png" alt="Lendi College Logo" class="main-logo">
+      <img src="accreditation.png" alt="Accreditation Logos" class="accr-logo">
+    </div>
+    <div class="admin-actions">
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </div>
+    <h2>Admin Panel - Attendance Management</h2>
+    <div id="adminMsg" class="msg"></div>
+    <form id="crForm">
+      <div class="section-block">
+        <h3>Change CRs</h3>
+        <div id="crSelectors"></div>
+        <button type="submit">Update CRs</button>
+      </div>
+    </form>
+    <form id="detainedForm">
+      <div class="section-block">
+        <h3>Change Detained Students</h3>
+        <div id="detainedInputs"></div>
+        <button type="submit">Update Detained</button>
+      </div>
+    </form>
+    <div class="section-block">
+      <h3>Download All Sections Attendance</h3>
+      <button id="downloadAllBtn">Download PDF</button>
+    </div>
+    <div class="section-block">
+      <h3>Filter Attendance</h3>
+      <div style="margin-bottom:10px;">
+        <label><input type="checkbox" class="section-filter" value="A" checked id="sectionA"> A</label>
+        <label><input type="checkbox" class="section-filter" value="B" checked id="sectionB"> B</label>
+        <label><input type="checkbox" class="section-filter" value="C" checked id="sectionC"> C</label>
+        <label><input type="checkbox" class="section-filter" value="D" checked id="sectionD"> D</label>
+      </div>
+      <div>
+        <label><input type="checkbox" class="status-filter" value="present" checked id="statusPresent"> Presents</label>
+        <label><input type="checkbox" class="status-filter" value="absent" checked id="statusAbsent"> Absentes</label>
+        <label><input type="checkbox" class="status-filter" value="permission" checked id="statusPermission"> Permission</label>
+      </div>
+    </div>
+    <div class="section-block">
+      <h3>Attendance Report</h3>
+      <label for="reportType">Report Type:</label>
+      <select id="reportType">
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+        <option value="custom">Custom Range</option>
+      </select>
+      <label for="fromDate" id="fromDateLabel">From:</label>
+      <input type="date" id="fromDate" />
+      <label for="toDate" id="toDateLabel">To:</label>
+      <input type="date" id="toDate" />
+      <div style="margin:10px 0;">
+        <label><input type="checkbox" class="report-section-filter" value="A" checked> A</label>
+        <label><input type="checkbox" class="report-section-filter" value="B" checked> B</label>
+        <label><input type="checkbox" class="report-section-filter" value="C" checked> C</label>
+        <label><input type="checkbox" class="report-section-filter" value="D" checked> D</label>
+      </div>
+      <div>
+        <label><input type="checkbox" class="report-status-filter" value="present" checked> Presents</label>
+        <label><input type="checkbox" class="report-status-filter" value="absent" checked> Absentees</label>
+        <label><input type="checkbox" class="report-status-filter" value="permission" checked> Permission</label>
+      </div>
+      <button id="generateReportBtn">Generate Report</button>
+      <button id="downloadReportBtn">Download Report</button>
+      <div id="attendanceReportTable" style="margin-top:18px;"></div>
+    </div>
+    <div class="section-block">
+      <h3>Search Student Attendance</h3>
+      <input type="text" id="searchRegNo" placeholder="Enter Register Number" maxlength="15" style="margin-right:10px;">
+      <select id="searchReportType">
+        <option value="week">Weekly</option>
+        <option value="month">Monthly</option>
+      </select>
+      <button id="searchStudentBtn">Search</button>
+      <div id="studentAttendanceResult" style="margin-top:18px;"></div>
+    </div>
+    <script>
+      // --- Admin Authentication (simple demo) ---
+      const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+      if (!user || user.type !== 'admin') {
+        window.location.href = "auth.html";
+      }
+
+      document.getElementById('logoutBtn').onclick = function() {
+        localStorage.removeItem('currentUser');
+        window.location.href = "auth.html";
+      };
+
+      // --- Demo Data (replace with backend fetch in production) ---
+      const sections = ['A', 'B', 'C', 'D'];
+      // Initial CRs (should be fetched from backend)
+      let crs = {
+        A: ['23KD1A0552', '23KD1A0521'],
+        B: ['23KD1A0575', '23KD1A05A4'],
+        C: ['23KD1A05F0', '23KD1A05G9','23KD1A05D8'],
+        D: ['23KD1A05L0', '23KD1A05N7']
+      };
+      // Initial detained (should be fetched from backend)
+      let detained = {
+        A: ['23KD1A0536'],
+        B: ['23KD1A0595', '23KD1A05A7', '23KD1A05C4'],
+        C: ['23KD1A05H6', '23KD1A05H9', '23KD1A05I5'],
+        D: []
+      };
+
+      // --- CR Selectors ---
+      function renderCRSelectors() {
+        const crSelectors = document.getElementById('crSelectors');
+        crSelectors.innerHTML = '';
+        sections.forEach(sec => {
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <label>${sec} Section CRs:</label>
+            <input type="text" name="cr_${sec}_1" value="${crs[sec][0] || ''}" placeholder="CR 1 Register Number" maxlength="12">
+            <input type="text" name="cr_${sec}_2" value="${crs[sec][1] || ''}" placeholder="CR 2 Register Number" maxlength="12">
+            <input type="text" name="cr_${sec}_3" value="${crs[sec][2] || ''}" placeholder="CR 3 Register Number" maxlength="12">
+          `;
+          crSelectors.appendChild(div);
+        });
+      }
+      renderCRSelectors();
+
+      // --- Detained Inputs ---
+      function renderDetainedInputs() {
+        const detainedInputs = document.getElementById('detainedInputs');
+        detainedInputs.innerHTML = '';
+        sections.forEach(sec => {
+          const div = document.createElement('div');
+          div.innerHTML = `
+            <label>${sec} Section Detained:</label>
+            <input type="text" name="detained_${sec}" value="${detained[sec].join(',')}" placeholder="Comma separated reg numbers">
+          `;
+          detainedInputs.appendChild(div);
+        });
+      }
+      renderDetainedInputs();
+
+      // --- Update CRs ---
+      document.getElementById('crForm').onsubmit = function(e) {
+        e.preventDefault();
+        sections.forEach(sec => {
+          const cr1 = document.querySelector(`input[name="cr_${sec}_1"]`).value.trim().toUpperCase();
+          const cr2 = document.querySelector(`input[name="cr_${sec}_2"]`).value.trim().toUpperCase();
+          const cr3 = document.querySelector(`input[name="cr_${sec}_3"]`).value.trim().toUpperCase();
+          crs[sec] = [cr1, cr2, cr3].filter(Boolean);
+        });
+        // TODO: Send updated CRs to backend here
+        document.getElementById('adminMsg').textContent = "CRs updated (not saved to backend in demo)";
+        setTimeout(() => document.getElementById('adminMsg').textContent = '', 2000);
+      };
+
+      // --- Update Detained ---
+      document.getElementById('detainedForm').onsubmit = function(e) {
+        e.preventDefault();
+        sections.forEach(sec => {
+          const val = document.querySelector(`input[name="detained_${sec}"]`).value.trim();
+          detained[sec] = val ? val.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : [];
+        });
+        // TODO: Send updated detained list to backend here
+        document.getElementById('adminMsg').textContent = "Detained students updated (not saved to backend in demo)";
+        setTimeout(() => document.getElementById('adminMsg').textContent = '', 2000);
+      };
+
+      // --- Download All Sections Attendance ---
+      document.getElementById('downloadAllBtn').onclick = async function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let y = 18;
+        doc.setFontSize(18);
+        doc.text("Today's Attendance", 105, y, { align: 'center' });
+        y += 10;
+
+        // Get today's date in yyyy-mm-dd
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const dateStr = `${yyyy}-${mm}-${dd}`;
+
+        // Get section and status preferences from checkboxes
+        const selectedSections = Array.from(document.querySelectorAll('.section-filter:checked')).map(cb => cb.value);
+        const selectedStatuses = Array.from(document.querySelectorAll('.status-filter:checked')).map(cb => cb.value);
+
+        // Fetch all attendance from backend
+        let allAttendance;
+        try {
+          const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/all');
+          if (!res.ok) throw new Error('Failed to fetch');
+          allAttendance = await res.json();
+        } catch (err) {
+          alert('Failed to fetch attendance from backend.');
+          return;
+        }
+
+        // Filter for today's attendance and selected sections
+        const todaysAttendance = allAttendance.filter(doc =>
+          doc.date === dateStr && selectedSections.includes(doc.section)
+        );
+
+        // For each section, separate by status and generate tables as per preferences
+        selectedSections.forEach(sec => {
+          const sectionDoc = todaysAttendance.find(doc => doc.section === sec);
+          if (sectionDoc && Array.isArray(sectionDoc.records) && sectionDoc.records.length > 0) {
+            doc.setFontSize(14);
+            doc.text(`${sec} Section (Submitted by: ${sectionDoc.submittedBy || "Unknown"})`, 15, y);
+            y += 7;
+
+            // For each selected status, create a table
+            selectedStatuses.forEach(status => {
+              const filtered = sectionDoc.records.filter(row => row.status === status);
+              if (filtered.length > 0) {
+                doc.setFontSize(12);
+                doc.text(`${status.charAt(0).toUpperCase() + status.slice(1)}s`, 20, y);
+                y += 6;
+                doc.autoTable({
+                  head: [['Reg No', 'Status']],
+                  body: filtered.map(row => [
+                    row.registerNumber || '',
+                    row.status.charAt(0).toUpperCase() + row.status.slice(1)
+                  ]),
+                  startY: y,
+                  theme: 'grid',
+                  styles: { fontSize: 10, halign: 'center' },
+                  headStyles: { fillColor: [227, 234, 252], textColor: [25, 118, 210] }
+                });
+                y = doc.lastAutoTable.finalY + 6;
+              }
+            });
+            y += 4;
+          }
+        });
+
+        doc.save(`Attendance_${dateStr}.pdf`);
+      };
+
+      async function fetchAllAttendance() {
+        const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/all');
+        if (!res.ok) throw new Error('Failed to fetch');
+        return await res.json(); // Array of attendance documents
+      }
+
+      // Example: filter by section/status from checkboxes
+      async function downloadFilteredAttendancePDF() {
+        const allAttendance = await fetchAllAttendance();
+        const selectedSections = Array.from(document.querySelectorAll('.section-filter:checked')).map(cb => cb.value);
+        const selectedStatuses = Array.from(document.querySelectorAll('.status-filter:checked')).map(cb => cb.value);
+
+        // ...generate PDF as before, but use allAttendance array...
+      }
+
+      document.getElementById('generateReportBtn').onclick = async function() {
+        const fromDateStr = document.getElementById('fromDate').value;
+        const toDateStr = document.getElementById('toDate').value;
+        if (!fromDateStr || !toDateStr) {
+          document.getElementById('attendanceReportTable').innerHTML = "<span style='color:red;'>Please select both dates.</span>";
+          return;
+        }
+        const startDate = new Date(fromDateStr);
+        const endDate = new Date(toDateStr);
+
+        const selectedSections = Array.from(document.querySelectorAll('.report-section-filter:checked')).map(cb => cb.value);
+        const selectedStatuses = Array.from(document.querySelectorAll('.report-status-filter:checked')).map(cb => cb.value);
+
+        let allAttendance;
+        try {
+          const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/all');
+          if (!res.ok) throw new Error('Failed to fetch');
+          allAttendance = await res.json();
+        } catch (err) {
+          document.getElementById('attendanceReportTable').innerHTML = "<span style='color:red;'>Failed to fetch attendance from backend.</span>";
+          return;
+        }
+
+        // Build report: regNo -> { present, absent, permission }
+        const report = {};
+        const classDates = new Set();
+        allAttendance.forEach(doc => {
+          const docDate = new Date(doc.date);
+          if (docDate >= startDate && docDate <= endDate && selectedSections.includes(doc.section)) {
+            classDates.add(doc.date);
+            doc.records.forEach(row => {
+              if (!selectedStatuses.includes(row.status)) return;
+              const reg = row.registerNumber;
+              if (!report[reg]) report[reg] = { present: 0, absent: 0, permission: 0 };
+              if (row.status === 'present') report[reg].present += 1;
+              else if (row.status === 'absent') report[reg].absent += 1;
+              else if (row.status === 'permission') report[reg].permission += 1;
+            });
+          }
+        });
+
+        // Render table and number of classes
+        // --- New Dynamic Table Generation Code ---
+        // Get selected status preferences
+        const showPresents = document.querySelector('.report-status-filter[value="present"]').checked;
+        const showAbsents = document.querySelector('.report-status-filter[value="absent"]').checked;
+        const showPermissions = document.querySelector('.report-status-filter[value="permission"]').checked;
+
+        // Build table headers dynamically
+        let headers = ['Register Number'];
+        if (showPresents) headers.push('Presents');
+        if (showAbsents) headers.push('Absents (No Permission)');
+        if (showPermissions) headers.push('Absents (With Permission)');
+
+        // Build table rows dynamically
+        let html = `<div style="margin-bottom:10px;font-weight:600;color:#1976d2;">Number of classes held: ${classDates.size}</div>`;
+        html += `<table border="1" style="width:100%;text-align:center;">
+          <thead>
+            <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>`;
+
+        Object.keys(report).forEach(reg => {
+          let row = [`<td>${reg}</td>`];
+          if (showPresents) row.push(`<td>${report[reg].present}</td>`);
+          if (showAbsents) row.push(`<td>${report[reg].absent}</td>`);
+          if (showPermissions) row.push(`<td>${report[reg].permission}</td>`);
+          html += `<tr>${row.join('')}</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById('attendanceReportTable').innerHTML = html;
+      };
+
+      document.getElementById('downloadReportBtn').onclick = async function() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        let y = 18;
+
+        // Get report type and date range
+        const reportType = document.getElementById('reportType').value;
+        const fromDateStr = document.getElementById('fromDate').value;
+        const toDateStr = document.getElementById('toDate').value;
+        let reportTitle = "Attendance Report";
+        if (reportType === "week") reportTitle = "Weekly Attendance Report";
+        else if (reportType === "month") reportTitle = "Monthly Attendance Report";
+        else if (reportType === "custom") reportTitle = "Custom Range Attendance Report";
+
+        doc.setFontSize(18);
+        doc.text(reportTitle, 105, y, { align: 'center' });
+        y += 10;
+
+        // Fetch and filter attendance
+        const selectedSections = Array.from(document.querySelectorAll('.report-section-filter:checked')).map(cb => cb.value);
+        const selectedStatuses = Array.from(document.querySelectorAll('.report-status-filter:checked')).map(cb => cb.value);
+
+        let allAttendance;
+        try {
+          const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/all');
+          if (!res.ok) throw new Error('Failed to fetch');
+          allAttendance = await res.json();
+        } catch (err) {
+          alert('Failed to fetch attendance from backend.');
+          return;
+        }
+
+        const startDate = new Date(fromDateStr);
+        const endDate = new Date(toDateStr);
+
+        // Build report: regNo -> { present, absent, permission }
+        const report = {};
+        const classDates = new Set();
+        allAttendance.forEach(docu => {
+          const docDate = new Date(docu.date);
+          if (docDate >= startDate && docDate <= endDate && selectedSections.includes(docu.section)) {
+            classDates.add(docu.date);
+            docu.records.forEach(row => {
+              if (!selectedStatuses.includes(row.status)) return;
+              const reg = row.registerNumber;
+              if (!report[reg]) report[reg] = { present: 0, absent: 0, permission: 0 };
+              if (row.status === 'present') report[reg].present += 1;
+              else if (row.status === 'absent') report[reg].absent += 1;
+              else if (row.status === 'permission') report[reg].permission += 1;
+            });
+          }
+        });
+
+        // Add number of classes info
+        doc.setFontSize(12);
+        doc.text(`Number of classes held: ${classDates.size}`, 15, y);
+        y += 8;
+
+        // Prepare table data
+        const tableBody = Object.keys(report).map(reg => [
+          reg,
+          report[reg].present,
+          report[reg].absent,
+          report[reg].permission
+        ]);
+
+        doc.autoTable({
+          head: [['Register Number', 'Presents', 'Absents (No Permission)', 'Absents (With Permission)']],
+          body: tableBody,
+          startY: y,
+          theme: 'grid',
+          styles: { fontSize: 10, halign: 'center' },
+          headStyles: { fillColor: [227, 234, 252], textColor: [25, 118, 210] }
+        });
+
+        doc.save('Attendance_Report.pdf');
+      };
+
+      // --- Search Student Attendance ---
+      document.getElementById('searchStudentBtn').onclick = async function() {
+  const regNo = document.getElementById('searchRegNo').value.trim().toUpperCase();
+  const reportType = document.getElementById('searchReportType').value;
+  const resultDiv = document.getElementById('studentAttendanceResult');
+  resultDiv.innerHTML = '';
+
+  if (!regNo) {
+    resultDiv.innerHTML = "<span style='color:red;'>Please enter a register number.</span>";
+    return;
+  }
+
+  // Calculate date range
+  const today = new Date();
+  let fromDate, toDate, rangeLabel;
+  if (reportType === 'week') {
+    const day = today.getDay() || 7;
+    fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - day + 1);
+    toDate = new Date(fromDate);
+    toDate.setDate(fromDate.getDate() + 6);
+    rangeLabel = `(${fromDate.toLocaleDateString()} to ${toDate.toLocaleDateString()})`;
+  } else if (reportType === 'month') {
+    fromDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    toDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    rangeLabel = `(${fromDate.toLocaleDateString()} to ${toDate.toLocaleDateString()})`;
+  }
+
+  // Fetch all attendance
+  let allAttendance;
+  try {
+    const res = await fetch('https://smart-attendence-p4wh.onrender.com/api/attendance/all');
+    if (!res.ok) throw new Error('Failed to fetch');
+    allAttendance = await res.json();
+  } catch (err) {
+    resultDiv.innerHTML = "<span style='color:red;'>Failed to fetch attendance from backend.</span>";
+    return;
+  }
+
+  // Filter attendance for this regNo and date range
+  let present = 0, absent = 0, permission = 0, total = 0, rows = [];
+  const classDates = new Set();
+  allAttendance.forEach(doc => {
+    const docDate = new Date(doc.date);
+    if (docDate >= fromDate && docDate <= toDate) {
+      doc.records.forEach(row => {
+        if ((row.registerNumber || '').trim().toUpperCase() === regNo) {
+          total++;
+          classDates.add(doc.date);
+          if (row.status === 'present') present++;
+          else if (row.status === 'absent') absent++;
+          else if (row.status === 'permission') permission++;
+          rows.push({
+            date: doc.date,
+            section: doc.section,
+            status: row.status
+          });
+        }
+      });
+    }
+  });
+
+  if (rows.length === 0) {
+    // For debugging: show all records for this regNo
+    let debugRows = [];
+    allAttendance.forEach(doc => {
+      doc.records.forEach(row => {
+        if ((row.registerNumber || '').trim().toUpperCase() === regNo) {
+          debugRows.push({
+            date: doc.date,
+            section: doc.section,
+            status: row.status
+          });
+        }
+      });
+    });
+    if (debugRows.length > 0) {
+      resultDiv.innerHTML = `<span style='color:orange;'>No attendance found for this student in the selected period ${rangeLabel}, but found records outside this range.</span>
+      <br><br>
+      <b>All records for ${regNo}:</b>
+      <table border="1" style="width:100%;text-align:center;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Section</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${debugRows.map(r => `<tr>
+            <td>${r.date}</td>
+            <td>${r.section}</td>
+            <td>${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    } else {
+      resultDiv.innerHTML = `<span style='color:red;'>No attendance found for this student in the selected period ${rangeLabel}.</span>`;
+    }
+    return;
+  }
+
+  // Render result
+  let html = `<div style="margin-bottom:10px;font-weight:600;color:#1976d2;">
+    ${reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report for <span style="color:#1a237e">${regNo}</span> ${rangeLabel}<br>
+    Number of classes held: ${classDates.size}<br>
+    Presents: ${present} | Absents: ${absent} | Permissions: ${permission}
+  </div>`;
+  html += `<table border="1" style="width:100%;text-align:center;">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Section</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>`;
+  rows.forEach(r => {
+    html += `<tr>
+      <td>${r.date}</td>
+      <td>${r.section}</td>
+      <td>${r.status.charAt(0).toUpperCase() + r.status.slice(1)}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  resultDiv.innerHTML = html;
+};
+    </script>
+  </div>
+</body>
+</html>
