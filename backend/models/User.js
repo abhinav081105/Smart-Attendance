@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   phone: String,
   pass: { type: String, required: true },
   section: String,
-  faceDescriptor: [Number] // For Face Recognition
+  faceDescriptor: [Number], // For Face Recognition
+  isApproved: { type: Boolean, default: true }
 });
 
 module.exports = mongoose.model('User', userSchema);

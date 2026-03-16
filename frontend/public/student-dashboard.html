@@ -4,293 +4,741 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Student Portal | Smart Attendance</title>
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --secondary: #10b981;
-      --accent: #f59e0b;
-      --danger: #ef4444;
-      --background: #fdfdfd;
+      --primary: #003366;
+      --primary-dark: #002244;
+      --primary-light: #004d99;
+      --secondary: #ffcc00;
+      --accent: #ff6f00;
+      --danger: #d32f2f;
+      --success: #16a34a;
+      --background: #eef2f7;
       --card: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border: #f1f5f9;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+      --text-main: #0a192f;
+      --text-muted: #546e7a;
+      --border: #dde3ec;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Outfit', sans-serif;
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      margin: 0;
+      background: var(--background);
       color: var(--text-main);
-      padding: 0;
       min-height: 100vh;
+      font-size: clamp(14px, 1.1vw, 16px);
+      animation: pageFade 0.5s ease both;
     }
+    @keyframes pageFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+    /* === NAV === */
     .top-nav {
-      background: var(--card);
-      padding: 16px 24px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      padding: 0 5%;
+      height: 64px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      position: sticky; top: 0; z-index: 1000; color: white;
     }
+    .nav-brand { font-weight: 900; font-size: 1rem; letter-spacing: -0.01em;
+      background: linear-gradient(90deg, #fff 0%, var(--secondary) 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-right { display: flex; gap: 10px; align-items: center; }
+    .icon-btn {
+      background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15);
+      color: white; padding: 8px; border-radius: 9px; cursor: pointer;
+      display: flex; align-items: center; transition: all 0.2s;
+    }
+    .icon-btn:hover { background: var(--secondary); color: var(--primary); transform: translateY(-1px); }
 
+    /* === LAYOUT === */
     .container {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 0 20px;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 28px 16px 48px;
     }
 
+    /* === PROFILE HERO === */
+    .profile-hero {
+      background: linear-gradient(135deg, var(--primary) 0%, #004080 100%);
+      border-radius: 22px;
+      padding: 32px 28px;
+      color: white;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,51,102,0.35);
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.1s both;
+    }
+    @keyframes cardIn { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+    .profile-hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 200px; height: 200px;
+      background: rgba(255,204,0,0.15);
+      border-radius: 50%;
+    }
+    .profile-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -40px; left: -40px;
+      width: 150px; height: 150px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 50%;
+    }
+
+    .profile-inner { position: relative; z-index: 1; display: flex; align-items: center; gap: 20px; }
+
+    .avatar {
+      width: 72px; height: 72px; border-radius: 18px;
+      background: linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; font-weight: 900; color: var(--primary);
+      flex-shrink: 0; box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+
+    .profile-info h2 { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+    .profile-info .sub { color: rgba(255,255,255,0.65); font-size: 0.82rem; font-weight: 600; margin-top: 3px; }
+    .profile-badge {
+      display: inline-block; margin-top: 8px;
+      background: rgba(255,204,0,0.2); color: var(--secondary);
+      padding: 4px 12px; border-radius: 99px;
+      font-size: 0.72rem; font-weight: 800;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      border: 1px solid rgba(255,204,0,0.4);
+    }
+
+    /* === GLASS CARD === */
     .glass-card {
       background: var(--card);
-      border-radius: 28px;
-      padding: 40px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-    }
-
-    .header-section {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
-    .header-section h2 {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: 800;
-      letter-spacing: -0.05em;
-      color: var(--text-main);
-    }
-
-    .profile-badge {
-      display: inline-block;
-      margin-top: 8px;
-      background: #eef2ff;
-      color: var(--primary);
-      padding: 6px 16px;
-      border-radius: 99px;
-      font-weight: 700;
-      font-size: 0.85rem;
-    }
-
-    .info-group {
-      background: #fafafa;
-      padding: 24px;
       border-radius: 20px;
-      margin-bottom: 24px;
-      border: 1px solid var(--border);
+      padding: 26px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,0.8);
+      margin-bottom: 18px;
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+      position: relative; overflow: hidden;
+    }
+    .glass-card:nth-child(2) { animation-delay: 0.15s; }
+    .glass-card:nth-child(3) { animation-delay: 0.25s; }
+    .glass-card:nth-child(4) { animation-delay: 0.35s; }
+
+    .card-label {
+      font-size: 0.7rem; font-weight: 800; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--border) 0%, transparent 100%);
     }
 
-    .form-group { margin-bottom: 20px; }
-    label { display: block; margin-bottom: 8px; font-weight: 700; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    
+    /* === FORM FIELDS === */
+    .form-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 6px; font-weight: 700; color: var(--primary); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
     .form-control {
-      width: 100%;
-      padding: 14px 18px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      font-family: inherit;
-      background: #fff;
-      transition: all 0.2s;
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid var(--border); border-radius: 11px;
+      font-size: 0.93rem; font-weight: 600; font-family: inherit;
+      background: #fafcff; outline: none;
+      transition: all 0.25s;
     }
-    .form-control:focus { border-color: var(--primary); outline: none; }
-    .form-control:disabled { background: #fdfdfd; color: #94a3b8; border-color: transparent; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,51,102,0.1); background: #fff; }
+    .form-control:disabled { background: #f1f5f9; color: var(--text-muted); }
 
+    /* === BTN === */
     .btn {
-      width: 100%;
-      padding: 16px;
-      border-radius: 14px;
-      font-weight: 800;
-      font-size: 1rem;
-      border: none;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%; padding: 14px;
+      border-radius: 11px; font-weight: 800; font-size: 0.95rem;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all 0.25s ease; position: relative; overflow: hidden;
     }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white; box-shadow: 0 4px 16px rgba(0,51,102,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,51,102,0.4); }
 
-    .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2); }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); }
+    /* Ripple */
+    .ripple-effect { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.35); transform: scale(0); animation: ripple 0.55s linear; pointer-events: none; }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
 
+    /* === ATTENDANCE RING === */
+    .att-ring-wrap {
+      display: flex; align-items: center; gap: 28px;
+      padding: 8px 0;
+    }
+    .ring-container { position: relative; flex-shrink: 0; width: 110px; height: 110px; }
+    .ring-svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: #e8edf5; stroke-width: 10; }
+    .ring-fill  {
+      fill: none; stroke: var(--primary); stroke-width: 10;
+      stroke-linecap: round;
+      stroke-dasharray: 283;
+      stroke-dashoffset: 283;
+      transition: stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ring-fill.danger-ring  { stroke: var(--danger); }
+    .ring-fill.warning-ring { stroke: var(--accent); }
+    .ring-fill.good-ring    { stroke: var(--success); }
+
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .ring-perc { font-size: 1.2rem; font-weight: 900; color: var(--primary); line-height: 1; }
+    .ring-sub  { font-size: 0.55rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+    .att-display-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .att-mini-card { background: #f8fafc; border-radius: 16px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid var(--border); }
+    .att-mini-label { font-size: 0.65rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 10px; }
+
+    .att-details { flex: 1; }
+    .det-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .det-row:last-child { margin-bottom: 0; }
+    .det-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .det-val   { font-size: 0.85rem; font-weight: 800; color: var(--text-main); }
+    .risk-chip { padding: 3px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 800; }
+    .risk-good    { background: #dcfce7; color: #15803d; }
+    .risk-warning { background: #fff7ed; color: #c2410c; }
+    .risk-danger  { background: #fee2e2; color: #991b1b; }
+
+    /* Subject progress bars */
+    .sub-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .sub-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .sub-name { font-size: 0.8rem; font-weight: 700; color: var(--text-main); }
+    .sub-count { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); }
+    .progress-track { background: #e8edf5; border-radius: 99px; height: 7px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
+      width: 0%;
+      transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-fill.sub-danger  { background: linear-gradient(90deg, var(--danger), #ef5350); }
+    .progress-fill.sub-warning { background: linear-gradient(90deg, var(--accent), #ff9800); }
+
+    /* === FACE PANEL === */
     .face-panel {
-        background: #0f172a;
-        color: white;
-        padding: 32px;
-        border-radius: 24px;
-        margin-top: 32px;
+      background: linear-gradient(145deg, #001a33 0%, #002a50 100%);
+      border-radius: 20px;
+      padding: 26px;
+      color: white;
+      margin-bottom: 18px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0,26,51,0.5);
+      animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) 0.45s both;
+    }
+    .face-panel::before {
+      content: '';
+      position: absolute;
+      top: -30px; right: -30px;
+      width: 120px; height: 120px;
+      background: radial-gradient(circle, rgba(0,102,204,0.4) 0%, transparent 70%);
+      animation: neonPulse 3s ease-in-out infinite;
+    }
+    @keyframes neonPulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 1; }
     }
 
-    .face-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
+    .face-label { font-size: 0.68rem; font-weight: 800; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px; }
+
+    .subject-select-dark {
+      width: 100%; background: rgba(255,255,255,0.08);
+      color: white; border: 1.5px solid rgba(255,255,255,0.15);
+      padding: 11px 14px; border-radius: 11px;
+      font-weight: 600; font-family: inherit; font-size: 0.92rem;
+      outline: none; transition: all 0.25s; margin-bottom: 16px;
+      cursor: pointer;
     }
+    .subject-select-dark:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(255,204,0,0.2); }
+    .subject-select-dark option { background: #002244; color: white; }
 
-    .btn-face { background: rgba(255,255,255,0.1); color: white; }
-    .btn-face:hover { background: rgba(255,255,255,0.2); }
-    .btn-face-success { background: var(--secondary); color: white; }
+    .face-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .btn-face {
+      padding: 13px; border-radius: 11px;
+      font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer;
+      transition: all 0.25s; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-face:hover { transform: translateY(-2px); }
+    .btn-enroll  { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-enroll:hover { background: rgba(255,255,255,0.18); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    .btn-mark    { background: linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%); color: var(--primary); }
+    .btn-mark:hover { box-shadow: 0 4px 20px rgba(255,204,0,0.5); }
 
-    .btn-logout { background: transparent; color: var(--danger); border: 2px solid #fee2e2; margin-top: 24px; }
-    .btn-logout:hover { background: #fef2f2; }
+    .btn-nfc {
+      width: 100%; padding: 11px;
+      background: transparent; color: rgba(255,255,255,0.7);
+      border: 1.5px solid rgba(255,255,255,0.15); border-radius: 10px;
+      font-family: inherit; font-weight: 700; font-size: 0.8rem;
+      cursor: pointer; transition: all 0.25s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-nfc:hover { border-color: var(--secondary); color: var(--secondary); }
 
-    /* Face Modal Overlay */
-    #faceModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-    .cam-box { position: relative; width: 100%; max-width: 480px; aspect-ratio: 4/3; background: #000; border-radius: 24px; overflow: hidden; border: 4px solid var(--primary); }
-    video#webcam { width: 100%; height: 100%; object-fit: cover; }
-    canvas#overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .cam-controls { margin-top: 30px; display: flex; gap: 15px; }
-    .hint-text { color: white; margin-bottom: 15px; font-weight: 700; font-size: 1.25rem; }
+    .face-status { font-size: 0.8rem; color: rgba(255,255,255,0.45); margin-top: 14px; text-align: center; }
+
+    /* Inline Camera */
+    .cam-box-inline {
+      display: none; margin-top: 16px;
+      position: relative; overflow: hidden;
+      border-radius: 14px; background: #000;
+      aspect-ratio: 4/3; border: 2px solid var(--secondary);
+      box-shadow: 0 0 25px rgba(255,204,0,0.25);
+    }
+    #webcam { width: 100%; height: 100%; object-fit: cover; }
+    #overlay { position: absolute; top:0; left:0; width: 100%; height: 100%; }
+    .hint-text-inline {
+      position: absolute; top: 10px; left: 0; width: 100%;
+      text-align: center; color: var(--secondary);
+      font-weight: 800; font-size: 0.72rem; text-transform: uppercase; z-index: 10;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8); letter-spacing: 0.08em;
+    }
+    /* Scan line animation on camera */
+    .cam-box-inline::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--secondary) 50%, transparent 100%);
+      animation: scanLine 2.5s linear infinite;
+      z-index: 5; opacity: 0.8;
+    }
+    @keyframes scanLine { 0% { top: 0%; } 100% { top: 100%; } }
+
+    .cam-controls-inline { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .btn-authorize { background: linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%); color: var(--primary); }
+    .btn-authorize:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-cancel { background: rgba(255,111,0,0.15); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,111,0,0.4); }
+    .btn-cancel:hover { background: rgba(255,111,0,0.3); }
+
+    /* === MODAL === */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.45); backdrop-filter: blur(6px);
+      z-index: 2000; align-items: center; justify-content: center;
+    }
+    .modal.open { display: flex; animation: modalFade 0.25s ease; }
+    @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+    .modal-content {
+      background: white; padding: 32px; border-radius: 22px;
+      width: 90%; max-width: 420px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: modalSlide 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalSlide { from { transform: translateY(20px) scale(0.96); } to { transform: translateY(0) scale(1); } }
+
+    /* === TOAST === */
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 14px 20px; border-radius: 12px; color: white; font-weight: 700; font-size: 0.88rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25); animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      display: flex; align-items: center; gap: 8px; min-width: 220px; }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    .toast-success { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .toast-error   { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 
     @media (max-width: 600px) {
-        .container { padding: 0; margin: 0; }
-        .glass-card { border-radius: 0; padding: 24px; }
+      .container { padding: 16px 12px 36px; }
+      .att-ring-wrap { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
   <div class="top-nav">
-     <div style="font-weight: 800; color: var(--primary); letter-spacing: -0.05em; font-size: 1.1rem;">LENDI PORTAL</div>
-     <button onclick="logout()" style="background:none; border:none; font-weight:700; color:var(--text-muted); cursor:pointer;">Sign Out</button>
+    <span class="nav-brand">Student Portal</span>
+    <div class="nav-right">
+      <button onclick="openSettings()" class="icon-btn" title="Settings">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+      <button onclick="logout()" class="icon-btn" style="border-color:rgba(239,68,68,0.4); color:#ef4444;" title="Logout">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
+    </div>
   </div>
+
+  <div class="toast-container" id="toastContainer"></div>
 
   <div class="container">
+    <!-- Profile Hero -->
+    <div class="profile-hero">
+      <div class="profile-inner">
+        <div class="avatar" id="avatarInitials">S</div>
+        <div class="profile-info">
+          <h2 id="welcomeText">Student Portal</h2>
+          <div class="sub" id="displayReg">Loading...</div>
+          <div class="sub" id="displayMail">Loading...</div>
+          <span id="studentRole" class="profile-badge">STUDENT</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile Card -->
+    <div class="glass-card" id="profileCard">
+      <div class="card-label">Profile Details</div>
+      <div class="form-group">
+        <label>Full Verified Name</label>
+        <input type="text" class="form-control" id="editName" placeholder="As per official records">
+      </div>
+      <div class="form-group">
+        <label>Mobile Number</label>
+        <input type="tel" class="form-control" id="editPhone" placeholder="For notifications">
+      </div>
+      <button class="btn btn-primary" id="saveBtn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+        Apply Changes
+      </button>
+      <div id="msg" style="text-align:center; margin-top:12px; font-weight:700; font-size:0.85rem;"></div>
+    </div>
+
     <div class="glass-card">
-      <div class="header-section">
-        <img src="college-logo.png" style="height: 100px; width: auto; margin-bottom: 24px;">
-        <h2 id="welcomeText" style="text-transform: uppercase; line-height: 1.1; font-weight: 800; font-size: 2.2rem; letter-spacing: -0.02em; color: #0f172a;">Student Portal</h2>
-        <div style="margin-top: 12px;">
-            <span id="studentRole" class="profile-badge" style="background: #eff6ff; color: #2563eb; padding: 8px 20px; font-weight: 800; letter-spacing: 0.05em;">OFFICIAL STUDENT</span>
+      <div class="card-label">Attendance Tracking</div>
+      <div style="display: flex; gap: 20px; align-items: center; justify-content: space-around;">
+        <!-- Daily Attendance -->
+        <div style="text-align: center;">
+            <div class="ring-container" style="width: 90px; height: 90px;">
+                <svg class="ring-svg" width="90" height="90">
+                  <circle class="ring-track" cx="45" cy="45" r="40" stroke-width="8"></circle>
+                  <circle id="dailyRingFill" class="ring-fill" cx="45" cy="45" r="40" stroke-width="8" style="stroke-dasharray: 251; stroke-dashoffset: 251;"></circle>
+                </svg>
+                <div class="ring-center">
+                  <span id="dailyPerc" class="ring-perc" style="font-size: 1.1rem;">--%</span>
+                  <span class="ring-sub" style="font-size: 0.5rem;">Daily</span>
+                </div>
+            </div>
+            <div id="dailyRisk" class="risk-chip risk-good" style="margin-top: 8px;">REGULAR</div>
+        </div>
+
+        <!-- Divider -->
+        <div style="width: 1px; height: 60px; background: var(--border);"></div>
+
+        <!-- Period-wise Attendance -->
+        <div style="text-align: center;">
+            <div class="ring-container" style="width: 90px; height: 90px;">
+                <svg class="ring-svg" width="90" height="90">
+                  <circle class="ring-track" cx="45" cy="45" r="40" stroke-width="8"></circle>
+                  <circle id="ringFill" class="ring-fill" cx="45" cy="45" r="40" stroke-width="8" style="stroke-dasharray: 251; stroke-dashoffset: 251;"></circle>
+                </svg>
+                <div class="ring-center">
+                  <span id="totalPerc" class="ring-perc" style="font-size: 1.1rem;">--%</span>
+                  <span class="ring-sub" style="font-size: 0.5rem;">Period</span>
+                </div>
+            </div>
+            <div id="riskLabel" class="risk-chip risk-good" style="margin-top: 8px;">GOOD</div>
         </div>
       </div>
+      
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed var(--border); display: flex; justify-content: space-between; align-items: center;">
+         <span style="font-size: 0.65rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Primary Section</span>
+         <span id="sectionLabel" style="font-size: 0.75rem; color: var(--primary); font-weight: 800;">Loading...</span>
+      </div>
+    </div>
 
-      <div class="info-group">
-        <div class="form-group">
-          <label>Institutional Identifier</label>
-          <input type="text" class="form-control" id="displayReg" disabled>
-        </div>
-        <div class="form-group">
-          <label>Campus Email</label>
-          <input type="text" class="form-control" id="displayMail" disabled>
-        </div>
-        <hr style="border:0; border-top:1px solid var(--border); margin: 32px 0;">
-        <div class="form-group">
-          <label>Full Verified Name</label>
-          <input type="text" class="form-control" id="editName" placeholder="As per official records">
-        </div>
-        <div class="form-group">
-          <label>Mobile Number</label>
-          <input type="tel" class="form-control" id="editPhone" placeholder="For notifications">
-        </div>
+      <!-- Subject breakdown bars -->
+      <div id="subjectBreakdown" class="sub-list" style="margin-top: 24px;"></div>
+
+    <!-- Face Auth Panel -->
+    <div class="face-panel">
+      <div class="face-label">Gatekeeper | Secure Access</div>
+      
+      <div class="face-grid" style="margin-top: 20px; grid-template-columns: 1fr;">
+        <button class="btn-face btn-enroll" id="enrollBtn" style="display:none; margin-bottom: 12px; width: 100%;">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Enroll Biometric Face
+        </button>
         
-        <button class="btn btn-primary" id="saveBtn">Apply Changes</button>
-        <div id="msg" style="text-align:center; margin-top:15px; font-weight:700;"></div>
-      </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%;">
+            <!-- BUTTON 1: Daily Attendance (Sign In Style) -->
+            <button class="btn-face" id="dailyMarkBtn" style="background: var(--primary); color: white; border: none; flex-direction: column; padding: 15px 10px;">
+              <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+              <span style="font-size: 0.75rem; margin-top: 5px;">Day Attendance</span>
+            </button>
 
-      <div class="face-panel">
-        <label style="color:rgba(255,255,255,0.6); font-weight:800; display:block; margin-bottom:16px;">SECURE AUTHENTICATION</label>
-        <div class="face-grid">
-          <button class="btn btn-face" id="enrollBtn">Sync Face</button>
-          <button class="btn btn-face-success" id="markAttendanceBtn">Mark Present</button>
+            <!-- BUTTON 2: Period Attendance (Sign Up Style) -->
+            <div style="position: relative; display: flex; flex-direction: column;">
+                <select id="subjectSelect" class="subject-select-dark" style="position: absolute; inset: 0; opacity: 0; z-index: 2; width: 100%; height: 100%; cursor: pointer;">
+                    <option value="">Subject</option>
+                </select>
+                <button class="btn-face" id="periodMarkBtn" style="background: var(--secondary); color: var(--primary); border: none; flex-direction: column; padding: 15px 10px; width: 100%;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                    <span style="font-size: 0.75rem; margin-top: 5px;">Period Mark</span>
+                </button>
+            </div>
         </div>
-        <p style="font-size: 0.8rem; color: rgba(255,255,255,0.5); margin-top: 15px; text-align:center;" id="faceStatus">
-          Biometric record: <span style="color: var(--accent);">Pending registration</span>
-        </p>
       </div>
+      
+      <div id="selectedSubjectDisplay" style="text-align: center; font-size: 0.75rem; color: var(--secondary); margin-top: 8px; font-weight: 700;">No subject selected</div>
+      <div id="noSessionMsg" style="font-size:0.7rem;color:rgba(255,255,255,0.4);margin-top:4px;text-align:center;display:none;">⏳ Waiting for live session...</div>
 
-      <div class="info-group" style="margin-top:24px; border: 1px solid #fee2e2;">
-        <label style="color:var(--danger)">Security Access</label>
-        <div class="form-group" style="margin-top:15px">
-            <input type="password" class="form-control" id="oldPass" placeholder="Current Secret Key">
-        </div>
-        <div class="form-group">
-            <input type="password" class="form-control" id="newPass" placeholder="New Secret Key">
-        </div>
-        <button class="btn" style="background:#0f172a; color:white;" id="changePassBtn">Reset Password</button>
-        <p id="passMsg" style="text-align:center; margin-top:15px; font-weight:700; font-size:0.85rem;"></p>
+      <p class="face-status" id="faceStatus">
+        Biometric record: <span style="color: var(--accent);">Pending registration</span>
+      </p>
+
+      <!-- Inline Camera -->
+      <div id="inlineCamContainer" class="cam-box-inline">
+        <div class="hint-text-inline" id="hintText">System Initializing...</div>
+        <video id="webcam" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div id="inlineCamControls" class="cam-controls-inline" style="display:none;">
+        <button class="btn-face btn-authorize" id="captureBtn" disabled>Authorize</button>
+        <button class="btn-face btn-cancel" onclick="closeCam()">Cancel</button>
       </div>
     </div>
   </div>
 
-  <div id="faceModal">
-    <div class="hint-text" id="hintText">System Initializing...</div>
-    <div class="cam-box">
-      <video id="webcam" autoplay muted playsinline></video>
-      <canvas id="overlay"></canvas>
-    </div>
-    <div class="cam-controls">
-      <button class="btn btn-face-success" id="captureBtn" style="width: auto; padding: 12px 40px;" disabled>Authorize Face</button>
-      <button class="btn" onclick="closeCam()" style="width: auto; background: var(--danger); color: white;">Exit</button>
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h3 style="margin:0 0 20px; font-weight:800; color:var(--primary);">Account Security</h3>
+      <div class="form-group">
+        <label>Current Secret Key</label>
+        <input type="password" id="modalOldPass" class="form-control" placeholder="••••••••">
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label>New Secret Key</label>
+        <input type="password" id="modalNewPass" class="form-control" placeholder="••••••••">
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:22px;">
+        <button onclick="closeSettings()" style="background:#f1f5f9; border:none; padding:10px 20px; border-radius:9px; cursor:pointer; font-weight:700; font-family:inherit;">Cancel</button>
+        <button onclick="changePassword()" style="background:var(--primary); color:white; border:none; padding:10px 20px; border-radius:9px; cursor:pointer; font-weight:700; font-family:inherit;">Update Key</button>
+      </div>
     </div>
   </div>
 
   <script>
     const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (!user) window.location.href = "auth.html";
+    const API_URL = `http://${window.location.hostname}:5000/api`;
 
-    document.getElementById('welcomeText').textContent = user.name || 'Student Portal';
-    document.getElementById('displayReg').value = user.reg || user.facultyId || user.adminId;
-    document.getElementById('displayMail').value = user.mail;
-    document.getElementById('editName').value = user.name || '';
-    document.getElementById('editPhone').value = user.phone || '';
-    document.getElementById('studentRole').textContent = `OFFICIAL ${user.type.toUpperCase()}`;
+    // Safe population helper
+    const setT = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    const setV = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
 
-    const msgEl = document.getElementById('msg');
+    const nameText = user.name || 'Student';
+    setT('welcomeText', nameText);
+    setT('avatarInitials', nameText.charAt(0).toUpperCase());
+    setT('displayReg', user.reg || user.facultyId || user.adminId || '—');
+    setT('displayMail', user.mail || '');
+    setV('editName', user.name || '');
+    setV('editPhone', user.phone || '');
+    setT('studentRole', `OFFICIAL ${user.type.toUpperCase()}`);
+    setT('sectionLabel', user.section || '—');
+
+    // Ripple
+    function addRipple(btn, e) {
+      const rect = btn.getBoundingClientRect();
+      const r = document.createElement('span');
+      r.className = 'ripple-effect';
+      const size = Math.max(rect.width, rect.height) * 2;
+      r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 650);
+    }
+
+    // Toast
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.animation = 'none'; t.style.opacity = '0'; t.style.transition = 'opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3200);
+    }
+
+    document.getElementById('saveBtn').addEventListener('click', e => addRipple(document.getElementById('saveBtn'), e));
 
     document.getElementById('saveBtn').onclick = async () => {
-      const name = document.getElementById('editName').value.trim();
+      const name  = document.getElementById('editName').value.trim();
       const phone = document.getElementById('editPhone').value.trim();
-      
-      const res = await fetch('http://localhost:5000/api/auth/update-profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      const res   = await fetch(`${API_URL}/auth/update-profile`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user._id, type: user.type, name, phone })
       });
       const data = await res.json();
       if (res.ok) {
-        msgEl.textContent = "Profile verified & updated!";
-        msgEl.style.color = "var(--secondary)";
-        user.name = name;
-        user.phone = phone;
+        document.getElementById('msg').textContent = "✓ Profile updated!";
+        document.getElementById('msg').style.color = "var(--success)";
+        user.name = name; user.phone = phone;
         localStorage.setItem('currentUser', JSON.stringify(data.user));
         document.getElementById('welcomeText').textContent = name;
+        document.getElementById('avatarInitials').textContent = name.charAt(0).toUpperCase();
       } else {
-        msgEl.textContent = "Validation failed. Try again.";
-        msgEl.style.color = "var(--danger)";
+        document.getElementById('msg').textContent = "Validation failed. Try again.";
+        document.getElementById('msg').style.color = "var(--danger)";
       }
     };
 
-    // FACE LOGIC
-    let modelsLoaded = false;
-    let stream = null;
-    let currentDescriptor = null;
-    let isEnrollmentMode = false;
+    document.getElementById('subjectSelect').addEventListener('change', (e) => {
+        const sel = e.target;
+        const text = sel.options[sel.selectedIndex]?.text || 'No subject selected';
+        document.getElementById('selectedSubjectDisplay').textContent = sel.value ? `Targeting: ${text}` : 'No subject selected';
+        addRipple(sel.parentElement.querySelector('button'), { clientX: 0, clientY: 0 }); // Visual feedback
+    });
+
+    // ATTENDANCE RING ANIMATION
+    async function loadAttendanceStats() {
+      const sId = user.sectionId || user.section;
+      if (!sId) return;
+      try {
+        const res = await fetch(`${API_URL}/attendance/report/${sId}`);
+        if(!res.ok) return;
+        const data = await res.json();
+        if(!data || !data.report) return;
+        
+        const myData = data.report.find(r => r.reg === user.reg);
+        const subjects = data.subjects || [];
+
+        if (myData) {
+          // 1. Period-wise Stats
+          const pct = parseFloat(myData.avg);
+          document.getElementById('totalPerc').textContent = `${Math.round(pct)}%`;
+          const circumference = 251;
+          const offset = circumference - (pct / 100) * circumference;
+          const ring = document.getElementById('ringFill');
+          setTimeout(() => { ring.style.strokeDashoffset = offset; }, 300);
+
+          let cls = 'good-ring', riskCls = 'risk-good', riskLabel = 'HEALTHY';
+          if (pct < 75)      { cls = 'danger-ring';  riskCls = 'risk-danger';  riskLabel = 'CRITICAL'; }
+          else if (pct < 80) { cls = 'warning-ring'; riskCls = 'risk-warning'; riskLabel = 'LOW'; }
+          ring.className.baseVal = `ring-fill ${cls}`;
+          const riskEl = document.getElementById('riskLabel');
+          riskEl.textContent = riskLabel;
+          riskEl.className = `risk-chip ${riskCls}`;
+
+          // 2. Daily Attendance Stats
+          if (myData.daily) {
+            const dPct = parseFloat(myData.daily.avg);
+            document.getElementById('dailyPerc').textContent = `${Math.round(dPct)}%`;
+            const dOffset = 251 - (dPct / 100) * 251;
+            const dRing = document.getElementById('dailyRingFill');
+            setTimeout(() => { dRing.style.strokeDashoffset = dOffset; }, 500);
+
+            let dCls = 'good-ring', dRiskCls = 'risk-good', dRiskLabel = 'REGULAR';
+            if (dPct < 75)      { dCls = 'danger-ring';  dRiskCls = 'risk-danger';  dRiskLabel = 'POOR'; }
+            else if (dPct < 85) { dCls = 'warning-ring'; dRiskCls = 'risk-warning'; dRiskLabel = 'STABLE'; }
+            dRing.className.baseVal = `ring-fill ${dCls}`;
+            const dRiskEl = document.getElementById('dailyRisk');
+            dRiskEl.textContent = dRiskLabel;
+            dRiskEl.className = `risk-chip ${dRiskCls}`;
+          }
+
+        // Subject bars
+        const bd = document.getElementById('subjectBreakdown');
+        bd.innerHTML = '';
+        subjects.forEach(sub => {
+          const count = myData.subjects[sub._id] || 0;
+          const pctSub = sub.totalClasses > 0 ? Math.round((count / sub.totalClasses) * 100) : 0;
+          const barCls = pctSub < 75 ? 'sub-danger' : (pctSub < 80 ? 'sub-warning' : '');
+          bd.innerHTML += `
+            <div class="sub-item">
+              <div class="sub-header">
+                <span class="sub-name">${sub.name}</span>
+                <span class="sub-count">${count}/${sub.totalClasses} (${pctSub}%)</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill ${barCls}" data-pct="${pctSub}"></div>
+              </div>
+            </div>`;
+        });
+        // Animate bars
+        setTimeout(() => {
+          document.querySelectorAll('.progress-fill').forEach(bar => {
+            bar.style.width = bar.dataset.pct + '%';
+          });
+        }, 400);
+        }
+      } catch (e) { console.error('Error loading attendance stats:', e); }
+    }
+
+    // Load all ACTIVE SESSION subjects (started by faculty) for this section
+    async function loadSubjects() {
+      const sId = user.sectionId || user.section;
+      if (!sId) return;
+      const sel = document.getElementById('subjectSelect');
+      const noMsg = document.getElementById('noSessionMsg');
+      try {
+        const res = await fetch(`${API_URL}/attendance/active-sessions/${sId}`);
+        const sessions = await res.json();
+        sel.innerHTML = '<option value="">Select Subject</option>';
+        if (!sessions || sessions.length === 0) {
+          sel.add(new Option('No sessions active', ''));
+          document.getElementById('noSessionMsg').style.display = 'block';
+          document.getElementById('selectedSubjectDisplay').textContent = 'No active sessions';
+          return;
+        }
+        document.getElementById('noSessionMsg').style.display = 'none';
+        sessions.forEach(session => {
+          const opt = new Option(`🟢 ${session.facultyName} - ${session.subjectName}`, session.subjectId);
+          sel.add(opt);
+        });
+        document.getElementById('selectedSubjectDisplay').textContent = 'Please choose a subject';
+        if (sessions.length > 0) {
+            sel.selectedIndex = 1;
+            sel.dispatchEvent(new Event('change'));
+        }
+      } catch(e) {
+        sel.innerHTML = '<option value="">Could not load sessions</option>';
+        document.getElementById('noSessionMsg').style.display = 'block';
+        document.getElementById('selectedSubjectDisplay').textContent = 'Could not load sessions';
+      }
+    }
+
+    loadAttendanceStats();
+    loadSubjects();
+    // Refresh active sessions every 30 seconds
+    setInterval(loadSubjects, 30000);
+
+    // === FACE LOGIC ===
+    let modelsLoaded = false, stream = null, currentDescriptor = null, isEnrollmentMode = false;
+    let lastBlinkTime = 0, isLive = false;
 
     function updateFaceStatus() {
-      const statusEl = document.getElementById('faceStatus');
-      if (user.faceDescriptor && user.faceDescriptor.length > 0) {
-        statusEl.innerHTML = `Biometric record: <span style="color: var(--secondary);">Verified ✅</span>`;
-        document.getElementById('enrollBtn').textContent = "Update Bio-Profile";
+      // Check for descriptor in any form (Array or Object with numeric keys)
+      const hasBio = user.faceDescriptor && (
+        (Array.isArray(user.faceDescriptor) && user.faceDescriptor.length > 0) || 
+        (typeof user.faceDescriptor === 'object' && Object.keys(user.faceDescriptor).length > 0)
+      );
+      
+      const faceStatusEl = document.getElementById('faceStatus');
+      const enrollBtn = document.getElementById('enrollBtn');
+      const markBtn = document.getElementById('markAttendanceBtn');
+
+      if (hasBio) {
+        if(faceStatusEl) faceStatusEl.innerHTML = `Biometric record: <span style="color: var(--secondary);">Verified ✅</span>`;
+        if(enrollBtn) enrollBtn.style.display = 'none';
+        if (document.getElementById('profileCard')) document.getElementById('profileCard').style.display = 'none';
+      } else {
+        if(faceStatusEl) faceStatusEl.innerHTML = `Biometric record: <span style="color: var(--accent);">Pending registration</span>`;
+        if(enrollBtn) enrollBtn.style.display = 'flex';
+        if (document.getElementById('profileCard')) document.getElementById('profileCard').style.display = 'block';
       }
     }
     updateFaceStatus();
 
     async function loadModels() {
-      if(modelsLoaded) return;
+      if (modelsLoaded) return;
       document.getElementById('hintText').textContent = "Syncing AI Core...";
       const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
       await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
@@ -300,19 +748,33 @@
     }
 
     async function openCam(enrollMode = false) {
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!isSecure) { showToast('HTTPS required for camera access', 'error'); return; }
+      if (!navigator.mediaDevices?.getUserMedia) { showToast('Camera not supported on this browser', 'error'); return; }
+
       isEnrollmentMode = enrollMode;
-      document.getElementById('faceModal').style.display = 'flex';
+      const camBox = document.getElementById('inlineCamContainer');
+      camBox.style.display = 'block';
+      document.getElementById('inlineCamControls').style.display = 'grid';
+      camBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('hintText').textContent = 'Starting camera...';
+
       await loadModels();
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: {} });
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
         document.getElementById('webcam').srcObject = stream;
         startDetection();
-      } catch (err) { alert("Camera Permission Required"); closeCam(); }
+      } catch (err) {
+        if (err.name === 'NotAllowedError') showToast('Camera permission denied', 'error');
+        else showToast('Camera error: ' + err.message, 'error');
+        closeCam();
+      }
     }
 
     function closeCam() {
-      if(stream) stream.getTracks().forEach(t => t.stop());
-      document.getElementById('faceModal').style.display = 'none';
+      if (stream) stream.getTracks().forEach(t => t.stop());
+      document.getElementById('inlineCamContainer').style.display = 'none';
+      document.getElementById('inlineCamControls').style.display = 'none';
     }
 
     function startDetection() {
@@ -320,47 +782,110 @@
       const c = document.getElementById('overlay');
       const size = { width: v.offsetWidth, height: v.offsetHeight };
       faceapi.matchDimensions(c, size);
-      
+
       const i = setInterval(async () => {
-        if (document.getElementById('faceModal').style.display === 'none') { clearInterval(i); return; }
+        if (document.getElementById('inlineCamContainer').style.display === 'none') { clearInterval(i); return; }
         const detections = await faceapi.detectAllFaces(v, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
         c.getContext('2d').clearRect(0,0,c.width,c.height);
-        faceapi.draw.drawDetections(c, faceapi.resizeResults(detections, size));
+
         if (detections.length) {
-          document.getElementById('hintText').textContent = "Identity Locked";
-          document.getElementById('captureBtn').disabled = false;
+          const lms = detections[0].landmarks;
+          const le = lms.getLeftEye(), re = lms.getRightEye();
+          const ear = (getDistance(le[1],le[5]) + getDistance(le[2],le[4])) / (2 * getDistance(le[0],le[3]));
+          if (ear < 0.22) { isLive = true; lastBlinkTime = Date.now(); }
+
+          if (isLive && (Date.now() - lastBlinkTime < 3000)) {
+            document.getElementById('hintText').textContent = "Identity Authenticated (Live) ✓";
+            const cb = document.getElementById('captureBtn');
+            cb.disabled = false;
+            cb.style.background = 'linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%)';
+          } else {
+            document.getElementById('hintText').textContent = "BLINK TO VERIFY LIVENESS";
+            const cb = document.getElementById('captureBtn');
+            cb.disabled = true;
+            cb.style.background = 'rgba(255,255,255,0.1)';
+          }
           currentDescriptor = detections[0].descriptor;
+          faceapi.draw.drawDetections(c, faceapi.resizeResults(detections, size));
         } else {
-          document.getElementById('hintText').textContent = "Scanning...";
+          document.getElementById('hintText').textContent = "Searching for Face...";
           document.getElementById('captureBtn').disabled = true;
+          isLive = false;
         }
-      }, 200);
+      }, 150);
     }
 
-    document.getElementById('enrollBtn').onclick = () => openCam(true);
-    document.getElementById('markAttendanceBtn').onclick = () => openCam(false);
+    function getDistance(p1, p2) { return Math.sqrt(Math.pow(p1.x-p2.x,2) + Math.pow(p1.y-p2.y,2)); }
+
+    document.getElementById('enrollBtn').onclick = () => { isEnrollmentMode = true; openCam(true); };
+    
+    // Day Attendance Action
+    document.getElementById('dailyMarkBtn').onclick = () => {
+      isEnrollmentMode = false;
+      window.targetSubjectId = null; // Important: Clear any subject filter
+      openCam(false);
+    };
+
+    // Period Attendance Action
+    document.getElementById('subjectSelect').addEventListener('change', (e) => {
+        const subId = e.target.value;
+        if (!subId) return;
+        
+        isEnrollmentMode = false;
+        window.targetSubjectId = subId;
+        
+        const sel = e.target;
+        const text = sel.options[sel.selectedIndex]?.text || 'No subject selected';
+        document.getElementById('selectedSubjectDisplay').textContent = `Targeting: ${text}`;
+        
+        openCam(false);
+    });
 
     document.getElementById('captureBtn').onclick = async () => {
       let lat, lng;
       try {
-        const p = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej));
+        const p = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res, rej, { timeout: 10000, enableHighAccuracy: true }));
         lat = p.coords.latitude; lng = p.coords.longitude;
-      } catch(e){}
+      } catch(e) { console.warn('Geolocation failed:', e.message); }
 
-      const res = await fetch(`http://localhost:5000/api/auth/${isEnrollmentMode?'enroll-face':'mark-attendance-face'}`, {
+      const res = await fetch(`${API_URL}/auth/${isEnrollmentMode?'enroll-face':'mark-attendance-face'}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id, type: user.type, descriptor: Array.from(currentDescriptor), latitude:lat, longitude:lng })
+        body: JSON.stringify({ 
+            userId: user._id, 
+            type: user.type, 
+            descriptor: Array.from(currentDescriptor), 
+            latitude: lat, 
+            longitude: lng, 
+            subjectId: window.targetSubjectId || null 
+        })
       });
       if (res.ok) {
-        if(isEnrollmentMode) { user.faceDescriptor = Array.from(currentDescriptor); localStorage.setItem('currentUser', JSON.stringify(user)); updateFaceStatus(); }
-        alert("Operation Successful");
+        if (isEnrollmentMode) { user.faceDescriptor = Array.from(currentDescriptor); localStorage.setItem('currentUser', JSON.stringify(user)); updateFaceStatus(); }
+        showToast("Operation Successful ✓");
       } else {
-        const d = await res.json(); alert(d.message || "Failed");
+        const d = await res.json();
+        showToast(d.message || "Failed", 'error');
       }
       closeCam();
     };
 
-    window.logout = () => { localStorage.clear(); window.location.href="auth.html"; };
+    window.openSettings = () => document.getElementById('settingsModal').classList.add('open');
+    window.closeSettings = () => document.getElementById('settingsModal').classList.remove('open');
+    document.getElementById('settingsModal').onclick = e => { if (e.target === e.currentTarget) closeSettings(); };
+
+    window.changePassword = async () => {
+      const oldPass = document.getElementById('modalOldPass').value;
+      const newPass = document.getElementById('modalNewPass').value;
+      if (!oldPass || !newPass) return showToast("Please fill both fields", 'error');
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, type: user.type, oldPass, newPass })
+      });
+      if (res.ok) { showToast("Security key updated successfully"); closeSettings(); }
+      else { showToast("Current key is incorrect", 'error'); }
+    };
+
+    window.logout = () => { localStorage.clear(); window.location.href = "auth.html"; };
   </script>
 </body>
 </html>

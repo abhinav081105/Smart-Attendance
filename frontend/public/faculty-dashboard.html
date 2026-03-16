@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Faculty Hub | Smart Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <style>
+    :root {
+      --primary: #003366; --primary-dark: #002244; --primary-light: #004d99;
+      --secondary: #ffcc00; --accent: #ff6f00; --danger: #d32f2f;
+      --success: #16a34a; --background: #eef2f7; --card: #ffffff;
+      --text-main: #0a192f; --text-muted: #546e7a; --border: #dde3ec;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Outfit', sans-serif; background: var(--background); color: var(--text-main); min-height: 100vh; animation: pageFade 0.5s ease both; }
+    @keyframes pageFade { from { opacity:0; transform:translateY(8px);} to { opacity:1; transform:translateY(0);} }
+    .top-nav { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); padding: 0 5%; height: 64px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.25); position: sticky; top: 0; z-index: 1000; color: white; }
+    .nav-brand { display: flex; align-items: center; gap: 14px; }
+    .nav-brand img { height: 38px; }
+    .nav-brand-text { font-weight: 900; font-size: 1.05rem; background: linear-gradient(90deg,#fff 0%,var(--secondary) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .nav-right { display: flex; gap: 10px; align-items: center; }
+    .user-pill { background: rgba(255,255,255,0.1); padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; border: 1px solid rgba(255,204,0,0.4); }
+    .icon-btn { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: white; padding: 8px; border-radius: 9px; cursor: pointer; display: flex; align-items: center; transition: all 0.2s; }
+    .icon-btn:hover { background: var(--secondary); color: var(--primary); transform: translateY(-1px); }
+    .container { max-width: 1200px; margin: 28px auto; padding: 0 20px; display: grid; grid-template-columns: 240px 1fr; gap: 24px; }
+    .sidebar { display: flex; flex-direction: column; gap: 8px; }
+    .sidebar-info-card { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border-radius: 16px; padding: 20px; color: white; margin-bottom: 8px; box-shadow: 0 4px 16px rgba(0,51,102,0.3); }
+    .sidebar-avatar { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; font-weight: 900; color: var(--primary); margin-bottom: 12px; }
+    .sidebar-name { font-weight: 800; font-size: 0.95rem; }
+    .sidebar-role { font-size: 0.75rem; color: rgba(255,255,255,0.55); font-weight: 600; margin-top: 3px; }
+    .face-status-badge { margin-top: 10px; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; display: inline-block; background: rgba(255,204,0,0.2); color: var(--secondary); border: 1px solid rgba(255,204,0,0.4); }
+    .side-tab { padding: 14px 18px; background: white; border-radius: 14px; font-weight: 700; color: var(--text-muted); cursor: pointer; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); border: 1px solid transparent; display: flex; align-items: center; gap: 12px; }
+    .side-tab:hover { background: #f5f8ff; color: var(--primary); transform: translateX(3px); }
+    .side-tab.active { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 6px 20px rgba(0,51,102,0.3); }
+    .main-area { background: white; border-radius: 22px; padding: 32px; box-shadow: var(--shadow); min-height: 600px; position: relative; overflow: hidden; }
+    .main-area::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 50%, var(--primary) 100%); background-size: 200% 100%; animation: shimmerBorder 4s linear infinite; }
+    @keyframes shimmerBorder { 0% { background-position: 0% 0%;} 100% { background-position: 200% 0%;} }
+    .card-title { font-weight: 900; color: var(--primary); font-size: 1.4rem; letter-spacing: -0.02em; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+    .session-config { background: #f5f8ff; padding: 24px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 28px; }
+    .grid-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+    .field-group { display: flex; flex-direction: column; gap: 7px; }
+    label { font-size: 0.7rem; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.06em; }
+    select, input { padding: 11px 14px; border-radius: 11px; border: 1.5px solid var(--border); font-family: inherit; font-weight: 600; font-size: 0.93rem; background: white; outline: none; transition: all 0.25s; cursor: pointer; }
+    select:focus, input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
+    .btn-action { width: 100%; padding: 14px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; transition: all 0.25s ease; font-family: inherit; font-size: 0.95rem; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-action:hover { transform: translateY(-2px); }
+    .btn-primary { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 4px 16px rgba(0,51,102,0.3); }
+    .btn-primary:hover { box-shadow: 0 8px 25px rgba(0,51,102,0.4); }
+    .btn-secondary { background: linear-gradient(135deg, var(--secondary) 0%, #ffd740 100%); color: var(--primary); box-shadow: 0 4px 16px rgba(255,204,0,0.3); }
+    .btn-success { background: linear-gradient(135deg, var(--success) 0%, #15803d 100%); color: white; box-shadow: 0 4px 16px rgba(22,163,74,0.3); }
+    .btn-danger { background: linear-gradient(135deg, var(--danger) 0%, #ef5350 100%); color: white; width: auto; padding: 10px 20px; box-shadow: 0 4px 12px rgba(211,47,47,0.3); }
+    .btn-sm { width: auto; padding: 6px 14px; font-size: 0.78rem; border-radius: 8px; }
+    .ripple-effect { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.35); transform: scale(0); animation: ripple 0.55s linear; pointer-events: none; }
+    @keyframes ripple { to { transform: scale(4); opacity: 0;} }
+    .live-status { display: none; margin-top: 18px; padding: 18px 20px; background: white; border-radius: 12px; border-left: 4px solid var(--secondary); box-shadow: 0 2px 12px rgba(0,0,0,0.05); animation: slideDown 0.35s ease; }
+    @keyframes slideDown { from { opacity:0; transform:translateY(-10px);} to { opacity:1; transform:translateY(0);} }
+    .live-status-inner { display: flex; justify-content: space-between; align-items: center; }
+    .session-clock { font-size: 0.82rem; color: var(--text-muted); font-weight: 600; margin-top: 3px; }
+    .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--success); margin-right: 8px; animation: livePulse 1.4s ease-in-out infinite; }
+    @keyframes livePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5);} 50% { box-shadow: 0 0 0 6px rgba(22,163,74,0);} }
+    .table-box { border-radius: 13px; overflow: hidden; border: 1px solid var(--border); margin-top: 18px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { background: linear-gradient(135deg,#f1f5f9 0%,#e8edf5 100%); padding: 12px 18px; text-align: left; font-size: 0.68rem; color: var(--primary); text-transform: uppercase; font-weight: 800; letter-spacing: 0.06em; border-bottom: 2px solid var(--border); }
+    td { padding: 12px 18px; border-bottom: 1px solid #f1f5f9; font-size: 0.88rem; background: white; transition: background 0.2s; }
+    tr:hover td { background: #fafcff; }
+    tr:last-child td { border-bottom: none; }
+    tbody tr { animation: rowReveal 0.4s ease both; }
+    @keyframes rowReveal { from { opacity:0; transform:translateX(-10px);} to { opacity:1; transform:translateX(0);} }
+    .status-capsule { display: inline-block; padding: 4px 12px; border-radius: 99px; font-weight: 800; font-size: 0.7rem; }
+    .status-present { background: #dcfce7; color: #15803d; }
+    .status-absent { background: #fee2e2; color: #991b1b; }
+    .status-permission { background: #fffbeb; color: #b45309; }
+    .refresh-btn { background: none; border: none; color: var(--primary); font-weight: 800; cursor: pointer; font-family: inherit; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s; }
+    .refresh-btn:hover { opacity: 0.7; }
+    .report-table { font-size: 0.8rem; }
+    .report-table th, .report-table td { padding: 9px 14px; text-align: center; }
+    .perc-badge { font-weight: 800; }
+    .low-att { color: var(--danger); } .med-att { color: var(--accent); } .high-att { color: var(--success); }
+    .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 14px 20px; border-radius: 12px; color: white; font-weight: 700; font-size: 0.88rem; box-shadow: 0 8px 25px rgba(0,0,0,0.25); animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1); display: flex; align-items: center; gap: 8px; min-width: 220px; }
+    @keyframes toastIn { from { opacity:0; transform:translateX(40px);} to { opacity:1; transform:translateX(0);} }
+    .toast-success { background: linear-gradient(135deg,#16a34a,#15803d); }
+    .toast-error { background: linear-gradient(135deg,#dc2626,#b91c1c); }
+    /* Face panel */
+    .face-panel { background: linear-gradient(145deg,#001a33 0%,#002a50 100%); border-radius: 16px; padding: 22px; color: white; margin-bottom: 20px; }
+    .face-panel-title { font-size: 0.7rem; font-weight: 800; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+    .face-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-face { padding: 12px; border-radius: 11px; font-weight: 700; font-size: 0.85rem; border: none; cursor: pointer; transition: all 0.25s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-enroll { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+    .btn-enroll:hover { background: rgba(255,255,255,0.18); }
+    .btn-mark-face { background: linear-gradient(135deg,var(--secondary) 0%,#ffd740 100%); color: var(--primary); }
+    .cam-box { display: none; margin-top: 14px; position: relative; overflow: hidden; border-radius: 12px; background: #000; aspect-ratio: 4/3; border: 2px solid var(--secondary); }
+    #facWebcam { width: 100%; height: 100%; object-fit: cover; }
+    #facOverlay { position: absolute; top:0; left:0; width:100%; height:100%; }
+    .hint-text { position: absolute; top: 10px; left: 0; width: 100%; text-align: center; color: var(--secondary); font-weight: 800; font-size: 0.72rem; text-transform: uppercase; z-index: 10; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+    .cam-box::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent 0%,var(--secondary) 50%,transparent 100%); animation:scanLine 2.5s linear infinite; z-index:5; }
+    @keyframes scanLine { 0% { top:0%;} 100% { top:100%;} }
+    .cam-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .btn-authorize { background: linear-gradient(135deg,var(--secondary) 0%,#ffd740 100%); color: var(--primary); }
+    .btn-authorize:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-cancel-cam { background: rgba(255,111,0,0.15); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,111,0,0.4); }
+    .face-info { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-top: 12px; text-align: center; }
+    /* Manual entry table */
+    .manual-table input[type=radio] { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    @media (max-width: 900px) { .container { grid-template-columns: 1fr; } .sidebar { flex-direction: row; overflow-x: auto; padding-bottom: 4px; } .side-tab { white-space: nowrap; padding: 10px 18px; flex-shrink: 0; } .sidebar-info-card { display: none; } .grid-fields { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <nav class="top-nav">
+    <div class="nav-brand">
+      <img src="https://image2url.com/r2/default/images/1773668714074-7eaefdc5-c41e-4f3b-a408-a1285f72e3c4.png" alt="Lendi">
+      <span class="nav-brand-text">Faculty Hub</span>
+    </div>
+    <div class="nav-right">
+      <div id="facName" class="user-pill">Faculty</div>
+      <button class="icon-btn" onclick="logout()" title="Logout">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+    <div class="sidebar">
+      <div class="sidebar-info-card">
+        <div class="sidebar-avatar" id="sidebarAvatar">F</div>
+        <div class="sidebar-name" id="sidebarName">Faculty</div>
+        <div class="sidebar-role">Faculty Member</div>
+        <div id="faceFlagBadge" class="face-status-badge" style="display:none;">Face Enrolled ✅</div>
+      </div>
+      <div class="side-tab active" onclick="switchTab('session')" id="tab-btn-session">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Attendance Session
+      </div>
+      <div class="side-tab" onclick="switchTab('manual')" id="tab-btn-manual">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Manual Entry
+      </div>
+      <div class="side-tab" onclick="switchTab('reports')" id="tab-btn-reports">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Attendance Reports
+      </div>
+      <div class="side-tab" onclick="switchTab('biometric')" id="tab-btn-biometric">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        Biometric Setup
+      </div>
+    </div>
+
+    <div class="main-area">
+      <!-- SESSION TAB -->
+      <div id="tab-session">
+        <h3 class="card-title">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Live Attendance Session
+        </h3>
+        <div class="session-config">
+          <div class="grid-fields">
+            <div class="field-group">
+              <label>Target Section</label>
+              <select id="sectionSelect" onchange="loadSubjects(this.value)">
+                <option value="">Choose Section</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Subject / Period</label>
+              <select id="subjectSelect">
+                <option value="">Select Subject</option>
+              </select>
+            </div>
+          </div>
+          <div id="sessionActions">
+            <button class="btn-action btn-primary" onclick="startSession()">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Initialize & Open Geofence
+            </button>
+          </div>
+          <div id="liveStatus" class="live-status">
+            <div class="live-status-inner">
+              <div>
+                <div style="display:flex;align-items:center;">
+                  <span class="live-dot"></span>
+                  <b id="activeSessionHeader" style="color:var(--primary)">Session Active</b>
+                </div>
+                <div class="session-clock" id="sessionClock">Duration: 00:00:00</div>
+              </div>
+              <button class="btn-action btn-danger" onclick="endSession()">Close &amp; Commit</button>
+            </div>
+          </div>
+        </div>
+        <div id="activeRecords" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h4 style="font-weight:800;color:var(--text-main);">Live Feed (Students in Zone)</h4>
+            <button onclick="refreshLiveFeed()" class="refresh-btn">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/></svg>
+              Refresh
+            </button>
+          </div>
+          <div class="table-box">
+            <table><thead><tr><th>Reg No</th><th>Name</th><th>Status</th><th>Override</th></tr></thead>
+            <tbody id="liveTableBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL ENTRY TAB -->
+      <div id="tab-manual" style="display:none;">
+        <h3 class="card-title">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Manual Attendance Entry
+        </h3>
+        <div class="session-config">
+          <div class="grid-fields">
+            <div class="field-group">
+              <label>Section</label>
+              <select id="manualSectionSelect" onchange="loadManualSubjects(this.value)">
+                <option value="">Choose Section</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>Subject</label>
+              <select id="manualSubjectSelect"><option value="">Select Subject</option></select>
+            </div>
+          </div>
+          <div class="grid-fields">
+            <div class="field-group">
+              <label>Date</label>
+              <input type="date" id="manualDate">
+            </div>
+            <div class="field-group" style="justify-content:flex-end;">
+              <label>&nbsp;</label>
+              <button class="btn-action btn-primary" style="height:46px;" onclick="loadManualStudents()">Load Students</button>
+            </div>
+          </div>
+        </div>
+        <div id="manualEntryArea" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h4 style="font-weight:800;">Mark Attendance</h4>
+            <div style="display:flex;gap:10px;">
+              <button class="btn-action btn-secondary btn-sm" onclick="markAllManual('present')">All Present</button>
+              <button class="btn-action btn-danger btn-sm" onclick="markAllManual('absent')">All Absent</button>
+            </div>
+          </div>
+          <div class="table-box">
+            <table class="manual-table">
+              <thead><tr><th>Reg No</th><th>Name</th><th>Present</th><th>Absent</th><th>Permission</th></tr></thead>
+              <tbody id="manualTableBody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:18px;flex-wrap:wrap;">
+            <button class="btn-action btn-primary" style="flex:1;min-width:160px;" onclick="saveManualEntry()">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+              Save Draft
+            </button>
+            <button class="btn-action btn-success" style="flex:1;min-width:160px;" onclick="pushManualToAdmin()">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              Push to Admin
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS TAB -->
+      <div id="tab-reports" style="display:none;">
+        <h3 class="card-title">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Attendance Analytics
+        </h3>
+        <div class="session-config" style="background:white;">
+          <label style="margin-bottom:8px;display:block;">Select Section to View Performance</label>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <select id="reportSectionSelect" style="flex:1;"></select>
+            <button class="btn-action btn-primary" style="width:auto;padding:0 28px;" onclick="generateReport()">Analyze</button>
+          </div>
+        </div>
+        <div id="reportContainer" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h4 style="font-weight:800;">Student Percentage Calculation</h4>
+            <button onclick="downloadCSV()" style="font-size:0.8rem;background:linear-gradient(135deg,var(--secondary),#ffd740);border:none;padding:9px 18px;border-radius:8px;font-weight:800;cursor:pointer;color:var(--primary);font-family:inherit;">⬇ Export CSV</button>
+          </div>
+          <div class="table-box" style="overflow-x:auto;">
+            <table id="fullReportTable" class="report-table">
+              <thead id="reportHead"></thead>
+              <tbody id="reportBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIOMETRIC TAB -->
+      <div id="tab-biometric" style="display:none;">
+        <h3 class="card-title">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          Biometric Face Setup
+        </h3>
+        <div class="face-panel">
+          <div class="face-panel-title">Face Recognition System</div>
+          <div class="face-grid">
+            <button class="btn-face btn-enroll" id="facEnrollBtn" onclick="openFacCam(true)">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span id="facEnrollBtnText">Enroll Face</span>
+            </button>
+            <button class="btn-face btn-mark-face" onclick="openFacCam(false)">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+              Verify Face Login
+            </button>
+          </div>
+          <p class="face-info" id="facFaceStatus">Biometric: <span style="color:var(--accent);">Not enrolled</span></p>
+          <div id="facCamBox" class="cam-box">
+            <div class="hint-text" id="facHintText">Initializing...</div>
+            <video id="facWebcam" autoplay muted playsinline></video>
+            <canvas id="facOverlay"></canvas>
+          </div>
+          <div id="facCamControls" class="cam-controls" style="display:none;">
+            <button class="btn-face btn-authorize" id="facCaptureBtn" disabled onclick="facCapture()">Capture</button>
+            <button class="btn-face btn-cancel-cam" onclick="closeFacCam()">Cancel</button>
+          </div>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text-muted);padding:8px 0;">Once your face is enrolled, you can use biometric verification for session login. Your face data is stored securely and cannot be transferred.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = `http://${window.location.hostname}:5000/api`;
+    const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
+    if (!user || user.type !== 'faculty') { window.location.href = 'auth.html'; }
+
+    const nameText = user.name || user.facultyId;
+    document.getElementById('facName').textContent = nameText;
+    document.getElementById('sidebarName').textContent = nameText;
+    document.getElementById('sidebarAvatar').textContent = nameText.charAt(0).toUpperCase();
+
+    // Show face enrolled badge and hide enroll btn if already done
+    if (user.faceDescriptor && user.faceDescriptor.length > 0) {
+      document.getElementById('faceFlagBadge').style.display = 'inline-block';
+      document.getElementById('facEnrollBtn').style.display = 'none';
+      document.getElementById('facFaceStatus').innerHTML = 'Biometric: <span style="color:var(--secondary);">Enrolled ✅</span>';
+    }
+
+    let activeSessionId = null, sessionTimer = null, sectionsData = [];
+    let manualSessionId = null;
+
+    function showToast(msg, type='success') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `<span>${type==='success'?'✓':'✕'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3200);
+    }
+
+    function switchTab(tab) {
+      ['session','manual','reports','biometric'].forEach(id => {
+        document.getElementById(`tab-${id}`).style.display = 'none';
+        document.getElementById(`tab-btn-${id}`).classList.remove('active');
+      });
+      document.getElementById(`tab-${tab}`).style.display = 'block';
+      document.getElementById(`tab-btn-${tab}`).classList.add('active');
+    }
+
+    async function init() {
+      const res = await fetch(`${API_URL}/admin/sections`);
+      sectionsData = await res.json();
+      ['sectionSelect','manualSectionSelect','reportSectionSelect'].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = `<option value="">Choose Section</option>`;
+        sectionsData.forEach(s => sel.add(new Option(`Year ${s.year} ${s.branchCode}-${s.name}`, s._id)));
+      });
+      // set today date for manual
+      document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+    }
+
+    async function loadSubjects(sectionId) {
+      if (!sectionId) return;
+      const res = await fetch(`${API_URL}/admin/subjects?sectionId=${sectionId}`);
+      const subjects = await res.json();
+      const subSelect = document.getElementById('subjectSelect');
+      subSelect.innerHTML = '<option value="">Select Subject</option>';
+      subjects.forEach(sub => {
+        if (sub.assignedFaculty?._id === user._id) subSelect.add(new Option(sub.name, sub._id));
+      });
+    }
+
+    async function loadManualSubjects(sectionId) {
+      if (!sectionId) return;
+      const res = await fetch(`${API_URL}/admin/subjects?sectionId=${sectionId}`);
+      const subjects = await res.json();
+      const subSelect = document.getElementById('manualSubjectSelect');
+      subSelect.innerHTML = '<option value="">Select Subject</option>';
+      subjects.forEach(sub => {
+        if (sub.assignedFaculty?._id === user._id) subSelect.add(new Option(sub.name, sub._id));
+      });
+    }
+
+    async function startSession() {
+      const sId = document.getElementById('sectionSelect').value;
+      const subId = document.getElementById('subjectSelect').value;
+      if (!sId || !subId) return showToast('Select Section and Subject!', 'error');
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`${API_URL}/attendance/start-session`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sectionId: sId, subjectId: subId, date: today, submittedBy: user.facultyId })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        activeSessionId = data.session._id;
+        document.getElementById('sessionActions').style.display = 'none';
+        document.getElementById('liveStatus').style.display = 'block';
+        document.getElementById('activeRecords').style.display = 'block';
+        document.getElementById('activeSessionHeader').textContent =
+          `${document.getElementById('sectionSelect').selectedOptions[0].text} — ${document.getElementById('subjectSelect').selectedOptions[0].text}`;
+        startTimer(); refreshLiveFeed();
+        showToast('Session started successfully ✓');
+      } else { const d = await res.json(); showToast(d.error || 'Failed', 'error'); }
+    }
+
+    function startTimer() {
+      let sec = 0;
+      sessionTimer = setInterval(() => {
+        sec++;
+        const h = Math.floor(sec/3600).toString().padStart(2,'0');
+        const m = Math.floor((sec%3600)/60).toString().padStart(2,'0');
+        const s = (sec%60).toString().padStart(2,'0');
+        document.getElementById('sessionClock').textContent = `Duration: ${h}:${m}:${s}`;
+      }, 1000);
+    }
+
+    async function endSession() {
+      if (!confirm('Close session and save results? This will increase the Classes Held count.')) return;
+      const res = await fetch(`${API_URL}/attendance/end-session`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sessionId: activeSessionId })
+      });
+      if (res.ok) {
+        clearInterval(sessionTimer); activeSessionId = null;
+        document.getElementById('sessionActions').style.display = 'block';
+        document.getElementById('liveStatus').style.display = 'none';
+        document.getElementById('activeRecords').style.display = 'none';
+        showToast('Session closed & committed ✓');
+      }
+    }
+
+    async function refreshLiveFeed() {
+      if (!activeSessionId) return;
+      const sId = document.getElementById('sectionSelect').value;
+      const today = new Date().toISOString().split('T')[0];
+      const [attRes, stuRes] = await Promise.all([
+        fetch(`${API_URL}/attendance/get/${sId}/${today}`),
+        fetch(`${API_URL}/admin/students?sectionId=${sId}`)
+      ]);
+      const data = await attRes.json();
+      const students = await stuRes.json();
+      const records = data.records || [];
+      const tbody = document.getElementById('liveTableBody');
+      tbody.innerHTML = '';
+      students.forEach((s, idx) => {
+        const match = records.find(r => r.registerNumber === s.reg);
+        const status = match ? match.status : 'absent';
+        const row = document.createElement('tr');
+        row.style.animationDelay = `${idx*35}ms`;
+        row.innerHTML = `<td><b>${s.reg}</b></td><td>${s.name}</td>
+          <td><span class="status-capsule status-${status}">${status.toUpperCase()}</span></td>
+          <td>${status==='absent'
+            ? `<button class="btn-action btn-secondary btn-sm" onclick="manualMark('${s.reg}','present')">Force Present</button>`
+            : '<span style="color:var(--text-muted);">—</span>'}</td>`;
+        tbody.appendChild(row);
+      });
+    }
+
+    async function manualMark(reg, status) {
+      const res = await fetch(`${API_URL}/attendance/update-status`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ recordId: activeSessionId, registerNumber: reg, newStatus: status, performedBy: user.name })
+      });
+      if (res.ok) { refreshLiveFeed(); showToast(`${reg} marked as ${status}`); }
+    }
+
+    // ---- MANUAL ENTRY ----
+    let manualStudents = [];
+    async function loadManualStudents() {
+      const sId = document.getElementById('manualSectionSelect').value;
+      const subId = document.getElementById('manualSubjectSelect').value;
+      const date = document.getElementById('manualDate').value;
+      if (!sId || !subId || !date) return showToast('Select Section, Subject and Date', 'error');
+      const [stuRes, attRes] = await Promise.all([
+        fetch(`${API_URL}/admin/students?sectionId=${sId}`),
+        fetch(`${API_URL}/attendance/get/${sId}/${date}`)
+      ]);
+      manualStudents = await stuRes.json();
+      const existing = await attRes.json();
+      const existingRecords = existing.records || [];
+      manualSessionId = existing._id || null;
+      const tbody = document.getElementById('manualTableBody');
+      tbody.innerHTML = '';
+      manualStudents.forEach((s, idx) => {
+        const match = existingRecords.find(r => r.registerNumber === s.reg);
+        const status = match ? match.status : 'absent';
+        const row = document.createElement('tr');
+        row.style.animationDelay = `${idx*25}ms`;
+        ['present','absent','permission'].forEach(opt => {
+          const checked = status === opt ? 'checked' : '';
+          row.innerHTML += `<td ${opt==='present'?`<td><b>${s.reg}</b></td><td>${s.name}</td>`:''}`;
+        });
+        row.innerHTML = `<td><b>${s.reg}</b></td><td>${s.name}</td>
+          <td><input type="radio" name="att_${s.reg}" value="present" ${status==='present'?'checked':''}></td>
+          <td><input type="radio" name="att_${s.reg}" value="absent" ${status==='absent'?'checked':''}></td>
+          <td><input type="radio" name="att_${s.reg}" value="permission" ${status==='permission'?'checked':''}></td>`;
+        tbody.appendChild(row);
+      });
+      document.getElementById('manualEntryArea').style.display = 'block';
+    }
+
+    function markAllManual(status) {
+      manualStudents.forEach(s => {
+        const radio = document.querySelector(`input[name="att_${s.reg}"][value="${status}"]`);
+        if (radio) radio.checked = true;
+      });
+    }
+
+    function collectManualRecords() {
+      return manualStudents.map(s => {
+        const sel = document.querySelector(`input[name="att_${s.reg}"]:checked`);
+        return { registerNumber: s.reg, status: sel ? sel.value : 'absent' };
+      });
+    }
+
+    async function saveManualEntry() {
+      const sId = document.getElementById('manualSectionSelect').value;
+      const subId = document.getElementById('manualSubjectSelect').value;
+      const date = document.getElementById('manualDate').value;
+      const records = collectManualRecords();
+      const res = await fetch(`${API_URL}/attendance/manual-entry`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ date, sectionId: sId, subjectId: subId, records, submittedBy: user.facultyId })
+      });
+      if (res.ok) { const d = await res.json(); manualSessionId = d.session._id; showToast('Draft saved ✓'); }
+      else { const d = await res.json(); showToast(d.message || 'Save failed', 'error'); }
+    }
+
+    async function pushManualToAdmin() {
+      if (!confirm('Push this attendance to admin? The class count will increase.')) return;
+      await saveManualEntry();
+      const sId = document.getElementById('manualSectionSelect').value;
+      const subId = document.getElementById('manualSubjectSelect').value;
+      const date = document.getElementById('manualDate').value;
+      const res = await fetch(`${API_URL}/attendance/push-to-admin`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ sectionId: sId, subjectId: subId, date })
+      });
+      if (res.ok) showToast('Attendance pushed to admin ✅');
+      else { const d = await res.json(); showToast(d.message || 'Push failed', 'error'); }
+    }
+
+    // ---- REPORTS ----
+    async function generateReport() {
+      const sId = document.getElementById('reportSectionSelect').value;
+      if (!sId) return;
+      const res = await fetch(`${API_URL}/attendance/report/${sId}`);
+      const { report, subjects } = await res.json();
+      document.getElementById('reportContainer').style.display = 'block';
+      const thead = document.getElementById('reportHead');
+      const tbody = document.getElementById('reportBody');
+      let headHtml = `<tr><th>Roll No</th><th>Name</th>`;
+      subjects.forEach(sub => headHtml += `<th>${sub.name}<br><small>(${sub.totalClasses} cls)</small></th>`);
+      headHtml += `<th>TOTAL</th><th>AVG %</th></tr>`;
+      thead.innerHTML = headHtml;
+      tbody.innerHTML = '';
+      report.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.style.animationDelay = `${idx*30}ms`;
+        let cells = `<td>${row.reg}</td><td>${row.name}</td>`;
+        subjects.forEach(sub => cells += `<td>${row.subjects[sub._id]||0}/${sub.totalClasses}</td>`);
+        const pc = row.avg < 75 ? 'low-att' : (row.avg < 80 ? 'med-att' : 'high-att');
+        cells += `<td><b>${row.total}/${row.totalHeld}</b></td><td class="perc-badge ${pc}">${row.avg}%</td>`;
+        tr.innerHTML = cells; tbody.appendChild(tr);
+      });
+    }
+
+    function downloadCSV() {
+      const table = document.getElementById('fullReportTable');
+      let csv = [];
+      for (let i = 0; i < table.rows.length; i++) {
+        let row = [], cols = table.rows[i].cells;
+        for (let j = 0; j < cols.length; j++) row.push('"' + cols[j].innerText.replace(/\n/g,' ') + '"');
+        csv.push(row.join(','));
+      }
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: 'Attendance_Report.csv', hidden: true });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      showToast('CSV exported ✓');
+    }
+
+    // ---- FACE SYSTEM ----
+    let facModelsLoaded = false, facStream = null, facDescriptor = null, facEnrollMode = false;
+    let facIsLive = false, facLastBlink = 0;
+
+    async function loadFacModels() {
+      if (facModelsLoaded) return;
+      document.getElementById('facHintText').textContent = 'Loading AI Models...';
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+      facModelsLoaded = true;
+    }
+
+    async function openFacCam(enrollMode) {
+      const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!isSecure) { showToast('HTTPS required for camera', 'error'); return; }
+      facEnrollMode = enrollMode;
+      document.getElementById('facCamBox').style.display = 'block';
+      document.getElementById('facCamControls').style.display = 'grid';
+      await loadFacModels();
+      try {
+        facStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: {ideal:640}, height: {ideal:480} }});
+        document.getElementById('facWebcam').srcObject = facStream;
+        startFacDetection();
+      } catch (err) { showToast('Camera error: ' + err.message, 'error'); closeFacCam(); }
+    }
+
+    function closeFacCam() {
+      if (facStream) facStream.getTracks().forEach(t => t.stop());
+      document.getElementById('facCamBox').style.display = 'none';
+      document.getElementById('facCamControls').style.display = 'none';
+      facIsLive = false;
+    }
+
+    function startFacDetection() {
+      const v = document.getElementById('facWebcam');
+      const c = document.getElementById('facOverlay');
+      const size = { width: v.offsetWidth || 320, height: v.offsetHeight || 240 };
+      faceapi.matchDimensions(c, size);
+      const iv = setInterval(async () => {
+        if (document.getElementById('facCamBox').style.display === 'none') { clearInterval(iv); return; }
+        const dets = await faceapi.detectAllFaces(v, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+        c.getContext('2d').clearRect(0,0,c.width,c.height);
+        if (dets.length) {
+          const lms = dets[0].landmarks;
+          const le = lms.getLeftEye(), re = lms.getRightEye();
+          const ear = (dist(le[1],le[5]) + dist(le[2],le[4])) / (2 * dist(le[0],le[3]));
+          if (ear < 0.22) { facIsLive = true; facLastBlink = Date.now(); }
+          const btn = document.getElementById('facCaptureBtn');
+          if (facIsLive && (Date.now()-facLastBlink < 3000)) {
+            document.getElementById('facHintText').textContent = 'Live Face Detected ✓';
+            btn.disabled = false;
+          } else {
+            document.getElementById('facHintText').textContent = 'BLINK TO VERIFY LIVENESS';
+            btn.disabled = true;
+          }
+          facDescriptor = dets[0].descriptor;
+          faceapi.draw.drawDetections(c, faceapi.resizeResults(dets, size));
+        } else {
+          document.getElementById('facHintText').textContent = 'Looking for face...';
+          document.getElementById('facCaptureBtn').disabled = true;
+        }
+      }, 150);
+    }
+
+    function dist(a, b) { return Math.sqrt(Math.pow(a.x-b.x,2)+Math.pow(a.y-b.y,2)); }
+
+    async function facCapture() {
+      if (!facDescriptor) return showToast('No face detected', 'error');
+      const endpoint = facEnrollMode ? 'enroll-face' : 'face-login';
+      const body = facEnrollMode
+        ? { userId: user._id, type: user.type, descriptor: Array.from(facDescriptor) }
+        : { descriptor: Array.from(facDescriptor) };
+      const res = await fetch(`${API_URL}/auth/${endpoint}`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const d = await res.json();
+      if (res.ok) {
+        if (facEnrollMode) {
+          user.faceDescriptor = Array.from(facDescriptor);
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          document.getElementById('faceFlagBadge').style.display = 'inline-block';
+          document.getElementById('facEnrollBtn').style.display = 'none';
+          document.getElementById('facFaceStatus').innerHTML = 'Biometric: <span style="color:var(--secondary);">Enrolled ✅</span>';
+          showToast('Face enrolled successfully ✓');
+        } else {
+          // Verify mode — Mark daily attendance
+          fetch(`${API_URL}/attendance/faculty-daily`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ facultyId: user.facultyId, name: user.name, type: user.type })
+          });
+          showToast('Face verified & Daily Attendance marked ✓');
+        }
+      } else { showToast(d.message || 'Failed', 'error'); }
+      closeFacCam();
+    }
+
+    window.logout = () => { localStorage.clear(); window.location.href = 'auth.html'; };
+    init();
+  </script>
+</body>
+</html>

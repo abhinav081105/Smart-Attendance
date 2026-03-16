@@ -3,161 +3,430 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Attendance Management System</title>
+  <title>Attendance Hub | CR Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --secondary: #10b981;
-      --accent: #f59e0b;
-      --danger: #ef4444;
-      --background: #f8fafc;
+      --primary: #003366;
+      --primary-dark: #002244;
+      --primary-light: #004d99;
+      --secondary: #ffcc00;
+      --accent: #ff6f00;
+      --danger: #d32f2f;
+      --success: #16a34a;
+      --background: #eef2f7;
       --card: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border: #f1f5f9;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+      --text-main: #0a192f;
+      --text-muted: #546e7a;
+      --border: #dde3ec;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+      --nav-h: 64px;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Outfit', sans-serif;
-      background-color: var(--background);
-      margin: 0;
+      background: var(--background);
       color: var(--text-main);
-      padding: 0;
       min-height: 100vh;
+      font-size: clamp(14px, 1.1vw, 16px);
+      animation: pageFade 0.5s ease both;
     }
 
-    /* Fixed Header for Mobile UX */
+    @keyframes pageFade {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== NAVBAR ===== */
     .top-nav {
-      background: var(--card);
-      padding: 20px 40px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      padding: 0 5%;
+      height: var(--nav-h);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 1000;
+      color: white;
     }
 
-    .brand-section { display: flex; align-items: center; gap: 15px; }
-    .nav-logos img { height: 40px; object-fit: contain; }
+    .brand-section { display: flex; align-items: center; gap: 14px; }
+    .nav-logos img { height: 40px; object-fit: contain; filter: brightness(1.1); }
 
-    .user-info { display: flex; align-items: center; gap: 15px; }
-    .user-badge { background: #eef2ff; color: var(--primary); padding: 8px 16px; border-radius: 99px; font-weight: 700; font-size: 0.9rem; }
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: -0.01em;
+      background: linear-gradient(90deg, #fff 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
+    .user-actions { display: flex; align-items: center; gap: 10px; }
+
+    .user-badge {
+      background: rgba(255,255,255,0.1);
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      border: 1px solid rgba(255,204,0,0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    .icon-btn {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      padding: 8px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+    .icon-btn:hover {
+      background: var(--secondary);
+      color: var(--primary);
+      border-color: var(--secondary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255,204,0,0.4);
+    }
+
+    /* ===== MAIN ===== */
     .main-container {
-      max-width: 1100px;
-      margin: 40px auto;
-      padding: 0 20px;
+      max-width: 1200px;
+      margin: 28px auto;
+      padding: 0 16px;
     }
 
+    /* ===== PAGE HEADER ===== */
+    .page-header {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .page-header-icon {
+      width: 48px; height: 48px;
+      background: var(--primary);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0,51,102,0.3);
+      flex-shrink: 0;
+    }
+
+    /* ===== GLASS CARD ===== */
     .glass-card {
       background: var(--card);
-      border-radius: 24px;
-      padding: 40px;
+      border-radius: 22px;
+      padding: clamp(20px, 3vw, 36px);
       box-shadow: var(--shadow);
-      border: 1px solid var(--border);
+      border: 1px solid rgba(255,255,255,0.8);
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 50%, var(--primary) 100%);
+      background-size: 200% 100%;
+      animation: shimmerBorder 4s linear infinite;
+    }
+    @keyframes shimmerBorder {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
     }
 
+    /* ===== SETUP GRID ===== */
     .setup-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin-bottom: 40px;
-      background: #fdfdfd;
-      padding: 24px;
-      border-radius: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 24px;
+      background: #f5f8ff;
+      padding: 22px;
+      border-radius: 16px;
       border: 1px solid var(--border);
     }
 
-    .input-group { display: flex; flex-direction: column; gap: 10px; }
-    label { font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .input-group { display: flex; flex-direction: column; gap: 7px; }
+    label {
+      font-weight: 700;
+      font-size: 0.7rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
     select, input[type="date"] {
-      padding: 14px 18px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      font-size: 1.1rem;
+      padding: 11px 14px;
+      border-radius: 11px;
+      border: 1.5px solid var(--border);
+      font-size: 0.93rem;
       font-weight: 600;
       font-family: inherit;
       background: white;
-      transition: border-color 0.2s;
+      color: var(--text-main);
+      outline: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
     }
-    select:focus, input:focus { border-color: var(--primary); outline: none; }
-
-    /* Attendance Table Custom Styling */
-    .attendance-table-wrapper {
-        border-radius: 20px;
-        overflow: hidden;
-        border: 1px solid var(--border);
+    select:focus, input[type="date"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(0,51,102,0.1);
     }
-    table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 20px 24px; background: #fafafa; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; border-bottom: 2px solid var(--border); }
-    td { padding: 18px 24px; border-bottom: 1px solid var(--border); background: white; }
 
-    .student-id { font-family: monospace; font-size: 1.15rem; font-weight: 700; color: var(--primary); }
-    .student-name { font-weight: 600; color: var(--text-main); }
-    
-    .status-btns {
+    /* ===== LIVE COUNTER BAR ===== */
+    .live-counter {
       display: flex;
-      gap: 8px;
-      justify-content: flex-end;
+      gap: 12px;
+      margin-bottom: 20px;
+      animation: counterIn 0.5s ease 0.3s both;
     }
-
-    .status-btn {
-      padding: 10px 18px;
-      border-radius: 10px;
+    @keyframes counterIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .counter-chip {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 12px;
       font-weight: 700;
       font-size: 0.85rem;
-      border: 2px solid #f1f5f9;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+    .counter-chip .chip-num {
+      font-size: 1.4rem;
+      font-weight: 900;
+      line-height: 1;
+      min-width: 30px;
+    }
+    .cc-present { background: #f0fdf4; border-color: #86efac; color: var(--success); }
+    .cc-absent  { background: #fef2f2; border-color: #fca5a5; color: var(--danger);  }
+    .cc-perm    { background: #fffbeb; border-color: #fde68a; color: #b45309; }
+
+    /* ===== TABLE ===== */
+    .attendance-table-wrapper {
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+      text-align: left;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e8edf5 100%);
+      font-size: 0.68rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 13px 20px;
+      border-bottom: 1px solid #f1f5f9;
+      background: white;
+      transition: background 0.2s;
+    }
+    tr:hover td { background: #fafcff; }
+    tr:last-child td { border-bottom: none; }
+
+    /* Staggered row reveal */
+    tbody tr {
+      animation: rowReveal 0.4s ease both;
+    }
+    @keyframes rowReveal {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .student-id   { font-family: 'Courier New', monospace; font-size: 1rem; font-weight: 800; color: var(--primary); }
+    .student-name { font-weight: 600; font-size: 0.92rem; }
+
+    /* ===== STATUS BUTTONS ===== */
+    .status-btns { display: flex; gap: 6px; justify-content: flex-end; }
+
+    .status-btn {
+      padding: 8px 13px;
+      border-radius: 9px;
+      font-weight: 700;
+      font-size: 0.73rem;
+      border: 1.5px solid #e2e8f0;
       cursor: pointer;
       background: white;
-      color: var(--text-muted);
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      letter-spacing: 0.01em;
     }
-    .status-btn:hover { background: #f8fafc; }
+    .status-btn:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
 
-    .status-btn.selected.present { background: var(--secondary); color: white; border-color: var(--secondary); }
-    .status-btn.selected.absent { background: var(--danger); color: white; border-color: var(--danger); }
-    .status-btn.selected.permission { background: var(--accent); color: white; border-color: var(--accent); }
+    .status-btn.selected.present  { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 3px 12px rgba(0,51,102,0.35); }
+    .status-btn.selected.absent   { background: var(--danger);  color: white; border-color: var(--danger);  box-shadow: 0 3px 12px rgba(211,47,47,0.35); }
+    .status-btn.selected.permission { background: var(--secondary); color: var(--primary); border-color: var(--secondary); box-shadow: 0 3px 12px rgba(255,204,0,0.4); }
 
-    .footer-actions {
-      margin-top: 40px;
-      display: flex;
-      justify-content: center;
-      gap: 20px;
+    /* Ripple */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      transform: scale(0);
+      animation: ripple 0.55s linear;
+      pointer-events: none;
+    }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    /* ===== LOADING STATE ===== */
+    .skeleton-row td { animation: skeletonPulse 1.5s ease infinite; }
+    @keyframes skeletonPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
+    /* ===== SUBMIT BUTTON ===== */
+    .footer-actions { margin-top: 24px; }
     .primary-btn {
-      padding: 18px 48px;
-      border-radius: 16px;
+      width: 100%;
+      padding: 16px;
+      border-radius: 14px;
       font-weight: 800;
-      font-size: 1.1rem;
+      font-size: 1rem;
       border: none;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
-      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(0,51,102,0.35);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.01em;
     }
-    .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); }
+    .primary-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0,51,102,0.45);
+    }
+    .primary-btn:active:not(:disabled) { transform: translateY(-1px); }
+    .primary-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .primary-btn.success {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      box-shadow: 0 6px 20px rgba(22,163,74,0.4);
+    }
 
-    .logout-btn { padding: 12px 24px; border-radius: 12px; color: var(--danger); border: 1px solid #fee2e2; background: white; font-weight: 600; cursor: pointer; }
+    .btn-spinner { display: none; }
+    .primary-btn.loading .btn-text { display: none; }
+    .primary-btn.loading .btn-spinner { display: flex; align-items: center; gap: 8px; }
+    .spinner-ring {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Mobile specific tweaks */
-    @media (max-width: 768px) {
-        .top-nav { padding: 15px 20px; flex-direction: column; gap: 15px; }
-        .glass-card { padding: 20px; border-radius: 0; }
-        .main-container { margin: 0; padding: 0; }
-        th:not(:first-child):not(:last-child) { display: none; }
-        .status-btns { flex-direction: column; gap: 4px; }
-        .status-btn { padding: 6px 10px; font-size: 0.75rem; text-align: center; }
+    /* ===== MODAL ===== */
+    .modal {
+      display: none;
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.45);
+      backdrop-filter: blur(6px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.open { display: flex; animation: modalFade 0.25s ease; }
+    @keyframes modalFade { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 22px;
+      width: 90%;
+      max-width: 440px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: modalSlide 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalSlide {
+      from { transform: translateY(24px) scale(0.96); }
+      to   { transform: translateY(0) scale(1); }
+    }
+    .modal-title { margin: 0 0 20px; font-weight: 800; color: var(--primary); font-size: 1.1rem; }
+
+    .modal-input {
+      width: 100%; padding: 12px 14px;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      font-family: inherit; font-size: 0.95rem; font-weight: 500;
+      outline: none; transition: all 0.25s;
+    }
+    .modal-input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,51,102,0.1); }
+
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-cancel { background: #f1f5f9; border: none; padding: 10px 20px; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: inherit; transition: background 0.2s; }
+    .modal-cancel:hover { background: #e2e8f0; }
+    .modal-confirm { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: inherit; transition: all 0.2s; }
+    .modal-confirm:hover { background: var(--primary-light); }
+
+    /* ===== TOAST ===== */
+    .toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    .toast {
+      padding: 14px 20px;
+      border-radius: 12px;
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+      animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      min-width: 240px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    @keyframes toastIn  { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateX(0); }    to { opacity: 0; transform: translateX(40px); } }
+    .toast-success { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .toast-error   { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-muted); font-weight: 600;
+    }
+    .empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+
+    @media (max-width: 600px) {
+      .brand-title { display: none; }
+      td, th { padding: 10px 12px; }
+      .student-id { font-size: 0.85rem; }
+      .status-btn { padding: 6px 8px; font-size: 0.65rem; }
+      .live-counter { flex-wrap: wrap; }
     }
   </style>
 </head>
@@ -165,18 +434,46 @@
   <nav class="top-nav">
     <div class="brand-section">
       <div class="nav-logos">
-        <img src="college-logo.png" alt="Logo" style="height: 48px; width: auto; object-fit: contain;">
+        <img src="https://image2url.com/r2/default/images/1773668714074-7eaefdc5-c41e-4f3b-a408-a1285f72e3c4.png" alt="Logo">
       </div>
-      <h2 style="margin:0; font-size: 1.3rem; font-weight: 800; color: var(--primary);">Attendance Manager</h2>
+      <span class="brand-title">Attendance Hub</span>
     </div>
-    <div class="user-info">
+    <div class="user-actions">
       <div id="userBadge" class="user-badge">User</div>
-      <button onclick="logout()" class="logout-btn">Sign Out</button>
+      <button onclick="openSettings()" class="icon-btn" title="Settings">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+      <button onclick="logout()" class="icon-btn" style="border-color:rgba(239,68,68,0.4); color:#ef4444;" title="Logout">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
     </div>
   </nav>
 
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h3 class="modal-title">Account Security</h3>
+      <div style="margin-bottom:14px;">
+        <label style="display:block; margin-bottom:6px;">Current Password</label>
+        <input type="password" id="oldPass" class="modal-input" placeholder="••••••••">
+      </div>
+      <div style="margin-bottom:4px;">
+        <label style="display:block; margin-bottom:6px;">New Password</label>
+        <input type="password" id="newPass" class="modal-input" placeholder="••••••••">
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeSettings()" class="modal-cancel">Cancel</button>
+        <button onclick="changePassword()" class="modal-confirm">Update Password</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <main class="main-container">
     <div class="glass-card">
+      <!-- Setup Grid -->
       <div class="setup-grid">
         <div class="input-group">
           <label>Select Date</label>
@@ -184,29 +481,71 @@
         </div>
         <div class="input-group">
           <label>Target Section</label>
-          <select id="sectionSelect"></select>
+          <select id="sectionSelect" onchange="loadSubjects(this.value)"></select>
+        </div>
+        <div class="input-group">
+          <label>Current Period / Subject</label>
+          <select id="subjectSelect">
+            <option value="">Select Subject</option>
+          </select>
         </div>
       </div>
 
-      <div class="attendance-table-wrapper" id="tableLoading" style="text-align:center; padding: 40px; display:none;">
-        <span style="font-weight: 700; color: var(--text-muted);">Syncing with records...</span>
+      <!-- Live Counter -->
+      <div class="live-counter" id="liveCounter" style="display:none;">
+        <div class="counter-chip cc-present">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+          <div>
+            <div class="chip-num" id="cntPresent">0</div>
+            <div style="font-size:0.68rem; opacity:0.7; text-transform:uppercase; letter-spacing:0.05em;">Present</div>
+          </div>
+        </div>
+        <div class="counter-chip cc-absent">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          <div>
+            <div class="chip-num" id="cntAbsent">0</div>
+            <div style="font-size:0.68rem; opacity:0.7; text-transform:uppercase; letter-spacing:0.05em;">Absent</div>
+          </div>
+        </div>
+        <div class="counter-chip cc-perm">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <div class="chip-num" id="cntPerm">0</div>
+            <div style="font-size:0.68rem; opacity:0.7; text-transform:uppercase; letter-spacing:0.05em;">Permission</div>
+          </div>
+        </div>
       </div>
 
+      <!-- Table -->
       <div class="attendance-table-wrapper" id="tableContent">
         <table>
           <thead>
             <tr>
-              <th>ID/Roll Number</th>
+              <th>ID / Roll Number</th>
               <th>Full Student Name</th>
-              <th style="text-align: right;">Participation Status</th>
+              <th style="text-align:right;">Participation Status</th>
             </tr>
           </thead>
-          <tbody id="attendanceBody"></tbody>
+          <tbody id="attendanceBody">
+            <tr>
+              <td colspan="3">
+                <div class="empty-state">
+                  <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="display:block; margin:0 auto 8px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>
+                  Select a section and date to load students
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
 
+      <!-- Submit -->
       <div class="footer-actions">
-        <button id="submitAttendance" class="primary-btn">Save Records & Review</button>
+        <button id="submitAttendance" class="primary-btn">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+          <span class="btn-text">Save Records &amp; Review</span>
+          <span class="btn-spinner"><span class="spinner-ring"></span> Saving...</span>
+        </button>
       </div>
     </div>
   </main>
@@ -214,11 +553,11 @@
   <script>
     const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (!user) window.location.href = "auth.html";
+    const API_URL = `http://${window.location.hostname}:5000/api`;
 
     const isCr = user.type === 'cr';
-    const attendanceState = {}; 
+    const attendanceState = {};
 
-    // UI Identity
     const roleLabel = user.type === 'cr' ? 'Class CR' : (user.type === 'admin' ? 'Admin' : 'Faculty');
     document.getElementById('userBadge').textContent = `${user.name || 'User'} (${roleLabel})`;
 
@@ -226,63 +565,120 @@
     const tbody = document.getElementById('attendanceBody');
     const dateInput = document.getElementById('attendanceDate');
 
-    // Defaults
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = localStorage.getItem('attendanceDate') || today;
     dateInput.onchange = () => {
-        localStorage.setItem('attendanceDate', dateInput.value);
-        if (sectionSelect.value) loadStudents(sectionSelect.value);
+      localStorage.setItem('attendanceDate', dateInput.value);
+      if (sectionSelect.value) loadStudents(sectionSelect.value);
     };
 
+    // Ripple helper
+    function addRipple(btn, e) {
+      const rect = btn.getBoundingClientRect();
+      const r = document.createElement('span');
+      r.className = 'ripple-effect';
+      const size = Math.max(rect.width, rect.height) * 2;
+      r.style.width = r.style.height = `${size}px`;
+      r.style.left = `${e.clientX - rect.left - size/2}px`;
+      r.style.top  = `${e.clientY - rect.top  - size/2}px`;
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 650);
+    }
+
+    // Toast
+    function showToast(msg, type = 'success') {
+      const c  = document.getElementById('toastContainer');
+      const t  = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.animation = 'toastOut 0.35s ease forwards'; setTimeout(() => t.remove(), 350); }, 3000);
+    }
+
+    // Update live counter
+    function updateCounter() {
+      let p = 0, a = 0, pm = 0;
+      Object.values(attendanceState).forEach(s => {
+        if (s === 'present') p++;
+        else if (s === 'absent') a++;
+        else if (s === 'permission') pm++;
+      });
+      document.getElementById('cntPresent').textContent = p;
+      document.getElementById('cntAbsent').textContent  = a;
+      document.getElementById('cntPerm').textContent    = pm;
+    }
+
     async function init() {
-      const res = await fetch('http://localhost:5000/api/admin/sections');
+      const res = await fetch(`${API_URL}/admin/sections`);
       const sections = await res.json();
-      
       sectionSelect.innerHTML = '';
       sections.forEach(s => {
         if (isCr && s._id !== user.section) return;
         const opt = new Option(`Year ${s.year} - ${s.branchCode} - Sec ${s.name}`, s._id);
         sectionSelect.add(opt);
       });
-
       if (sectionSelect.options.length > 0) {
         sectionSelect.value = localStorage.getItem('preferredSectionId') || sectionSelect.options[0].value;
+        await loadSubjects(sectionSelect.value);
         await loadStudents(sectionSelect.value);
       }
+    }
+
+    async function loadSubjects(sectionId) {
+      const res = await fetch(`${API_URL}/admin/subjects?sectionId=${sectionId}`);
+      const subjects = await res.json();
+      const subSelect = document.getElementById('subjectSelect');
+      subSelect.innerHTML = '<option value="">Select Subject</option>';
+      subjects.forEach(sub => subSelect.add(new Option(sub.name, sub._id)));
     }
 
     async function loadStudents(sectionId) {
       if (!sectionId) return;
       localStorage.setItem('preferredSectionId', sectionId);
       const date = dateInput.value;
-      
+
+      // Skeleton loading
+      tbody.innerHTML = `<tr class="skeleton-row"><td colspan="3" style="padding:20px; text-align:center; color:var(--text-muted); font-weight:700;">Syncing records...</td></tr>`;
+
       const [stuRes, attRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/admin/students?sectionId=${sectionId}`),
-        fetch(`http://localhost:5000/api/attendance/get/${sectionId}/${date}`)
+        fetch(`${API_URL}/admin/students?sectionId=${sectionId}`),
+        fetch(`${API_URL}/attendance/get/${sectionId}/${date}`)
       ]);
-      
+
       const students = await stuRes.json();
       const existingAtt = await attRes.json();
       const records = existingAtt.records || [];
 
       tbody.innerHTML = '';
-      students.forEach(s => {
+      // Clear old state
+      for (const k in attendanceState) delete attendanceState[k];
+
+      students.forEach((s, idx) => {
         const match = records.find(r => r.registerNumber === s.reg);
         attendanceState[s.reg] = match ? match.status : (s.detained ? 'detained' : 'absent');
 
         const tr = document.createElement('tr');
+        tr.style.animationDelay = `${idx * 40}ms`;
         tr.innerHTML = `
           <td><span class="student-id">${s.reg}</span></td>
-          <td><span class="student-name">${s.name || 'Student'} ${s.detained ? '<small style="color:var(--danger)">(Detained)</small>' : ''}</span></td>
+          <td><span class="student-name">${s.name || 'Student'}${s.detained ? ' <small style="color:var(--danger); font-weight:800;">(Detained)</small>' : ''}</span></td>
           <td class="status-btns">
-            ${s.detained ? '<b>DETAINED</b>' : `
-              <button onclick="mark('${s.reg}', 'present', this)" class="status-btn present ${attendanceState[s.reg]==='present'?'selected':''}">Present</button>
-              <button onclick="mark('${s.reg}', 'absent', this)" class="status-btn absent ${attendanceState[s.reg]==='absent'?'selected':''}">Absent</button>
-              <button onclick="mark('${s.reg}', 'permission', this)" class="status-btn permission ${attendanceState[s.reg]==='permission'?'selected':''}">Permission</button>
+            ${s.detained ? '<b style="color:var(--danger);">DETAINED</b>' : `
+              <button onclick="mark('${s.reg}','present',this)" class="status-btn present ${attendanceState[s.reg]==='present'?'selected':''}">Present</button>
+              <button onclick="mark('${s.reg}','absent',this)"  class="status-btn absent  ${attendanceState[s.reg]==='absent'?'selected':''}">Absent</button>
+              <button onclick="mark('${s.reg}','permission',this)" class="status-btn permission ${attendanceState[s.reg]==='permission'?'selected':''}">Permission</button>
             `}
           </td>
         `;
         tbody.appendChild(tr);
+      });
+
+      document.getElementById('liveCounter').style.display = 'flex';
+      updateCounter();
+
+      // Attach ripple to status buttons
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', e => addRipple(btn, e));
       });
     }
 
@@ -290,33 +686,67 @@
       attendanceState[reg] = status;
       btn.parentElement.querySelectorAll('.status-btn').forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
+      updateCounter();
     };
 
-    document.getElementById('submitAttendance').onclick = async () => {
+    const submitBtn = document.getElementById('submitAttendance');
+    submitBtn.addEventListener('click', e => addRipple(submitBtn, e));
+
+    submitBtn.onclick = async () => {
       const records = Object.keys(attendanceState).map(reg => ({ registerNumber: reg, status: attendanceState[reg] }));
       const payload = {
         date: dateInput.value,
         section: sectionSelect.options[sectionSelect.selectedIndex].text,
         sectionId: sectionSelect.value,
+        subjectId: document.getElementById('subjectSelect').value || null,
         submittedBy: user.reg || user.facultyId || user.adminId || 'System',
         records
       };
 
-      const res = await fetch('http://localhost:5000/api/attendance/submit', {
+      submitBtn.classList.add('loading');
+      submitBtn.disabled = true;
+
+      const res = await fetch(`${API_URL}/attendance/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       if (res.ok) {
+        submitBtn.classList.remove('loading');
+        submitBtn.classList.add('success');
+        submitBtn.querySelector('.btn-text').style.display = 'flex';
+        submitBtn.querySelector('.btn-text').innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> Saved!`;
         localStorage.setItem('attendanceData', JSON.stringify(records));
         localStorage.setItem('attendanceSummary', JSON.stringify({ section: payload.section }));
-        window.location.href = "summary.html";
+        setTimeout(() => window.location.href = "summary.html", 800);
       } else {
-        alert('Server processing error');
+        submitBtn.classList.remove('loading');
+        submitBtn.disabled = false;
+        showToast('Server processing error', 'error');
       }
     };
 
-    window.logout = () => { localStorage.clear(); window.location.href="auth.html"; };
+    window.openSettings = () => { document.getElementById('settingsModal').classList.add('open'); };
+    window.closeSettings = () => { document.getElementById('settingsModal').classList.remove('open'); };
+
+    // Close modal clicking backdrop
+    document.getElementById('settingsModal').onclick = e => { if (e.target === e.currentTarget) closeSettings(); };
+
+    window.changePassword = async () => {
+      const oldPass = document.getElementById('oldPass').value;
+      const newPass = document.getElementById('newPass').value;
+      if (!oldPass || !newPass) return showToast("Fill all fields", 'error');
+      const res = await fetch(`${API_URL}/auth/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, type: user.type, oldPass, newPass })
+      });
+      if (res.ok) { showToast("Password updated successfully"); closeSettings(); }
+      else { showToast("Failed to update password", 'error'); }
+    };
+
+    window.logout = () => { localStorage.clear(); window.location.href = "auth"; };
     init();
   </script>
 </body>

@@ -4,11 +4,19 @@ const sectionSchema = new mongoose.Schema({
   year: { type: Number, required: true },
   branchCode: { type: String, required: true },
   name: { type: String, required: true },
-  crs: [{ type: String }], // Array of register numbers
+  crs: [{ type: String }],
+  classInCharge: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   location: {
-    lat: { type: Number },
-    lng: { type: Number },
-    radius: { type: Number, default: 100 } // proximity in meters
+    lat: { type: Number }, // Center Lat
+    lng: { type: Number }, // Center Lng
+    radius: { type: Number, default: 100 }, // Backwards compatibility
+    bounds: {
+      north: { type: Number },
+      south: { type: Number },
+      east: { type: Number },
+      west: { type: Number }
+    },
+    useRectangle: { type: Boolean, default: true }
   },
   timeWindow: {
     start: { type: String }, // e.g. "09:00"

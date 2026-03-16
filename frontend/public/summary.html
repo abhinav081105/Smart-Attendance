@@ -3,320 +3,429 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Attendance Summary - Professional Portal</title>
+  <title>Attendance Summary | Smart Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --secondary: #10b981;
+      --primary: #003366;
+      --primary-dark: #002244;
+      --primary-light: #004d99;
+      --secondary: #ffcc00;
       --accent: #f59e0b;
       --danger: #ef4444;
-      --background: #fdfdfd;
+      --success: #10b981;
+      --background: #eef2f7;
       --card: #ffffff;
       --text-main: #1e293b;
       --text-muted: #64748b;
-      --border: #f1f5f9;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-      --glass-bg: rgba(255, 255, 255, 0.8);
+      --border: #e2e8f0;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: 'Outfit', sans-serif;
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      margin: 0;
+      background: var(--background);
       min-height: 100vh;
       color: var(--text-main);
-      padding: 40px 20px;
+      padding: 0;
     }
 
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: var(--card);
-      border-radius: 28px;
-      padding: 48px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      backdrop-filter: blur(8px);
-    }
-
-    header {
+    /* === HERO BANNER === */
+    .hero-banner {
+      background: linear-gradient(135deg, var(--primary) 0%, #004080 60%, #0059b3 100%);
+      padding: 40px 24px 80px;
       text-align: center;
-      margin-bottom: 48px;
+      position: relative; overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute; top: -60px; right: -60px;
+      width: 250px; height: 250px;
+      background: rgba(255,204,0,0.12); border-radius: 50%;
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute; bottom: -40px; left: -40px;
+      width: 180px; height: 180px;
+      background: rgba(255,255,255,0.05); border-radius: 50%;
     }
 
-    h2 {
-      font-size: 2.25rem;
-      font-weight: 800;
-      margin-top: 0;
-      letter-spacing: -0.05em;
-      background: linear-gradient(to right, var(--primary), #a855f7);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .hero-logo { height: 65px; object-fit: contain; margin-bottom: 16px; filter: brightness(1.1); position: relative; z-index: 1; }
+
+    .hero-title {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 900;
+      color: white;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      position: relative; z-index: 1;
+    }
+    .hero-title .grad-text {
+      background: linear-gradient(90deg, var(--secondary) 0%, #fff 100%);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
     }
 
-    .date-label {
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-top: -10px;
-      display: block;
-      font-size: 1.1rem;
+    .hero-sub {
+      color: rgba(255,255,255,0.6); font-size: 1rem; font-weight: 600;
+      margin-top: 8px; position: relative; z-index: 1;
     }
 
-    .stats-container {
+    /* === CONTAINER CARD === */
+    .container {
+      max-width: 860px; margin: -48px auto 40px;
+      padding: 0 20px;
+      position: relative; z-index: 10;
+    }
+
+    .main-card {
+      background: white; border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+      border: 1px solid rgba(255,255,255,0.9);
+    }
+
+    /* === STATS GRID === */
+    .stats-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
     }
 
     .stat-card {
-      background: var(--glass-bg);
-      padding: 24px;
-      border-radius: 20px;
-      text-align: center;
+      background: #fafcff;
       border: 1px solid var(--border);
+      border-radius: 18px; padding: 24px;
+      text-align: center;
       transition: all 0.3s ease;
+      position: relative; overflow: hidden;
     }
-
-    .stat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow); }
+    .stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px; border-radius: 2px 2px 0 0;
+    }
+    .sc-present::before { background: linear-gradient(90deg, #10b981, #059669); }
+    .sc-absent::before  { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .sc-perm::before    { background: linear-gradient(90deg, #f59e0b, #d97706); }
 
     .stat-val {
-      display: block;
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: 4px;
+      display: block; font-size: 2.5rem; font-weight: 900;
+      margin-bottom: 4px; line-height: 1;
+      font-variant-numeric: tabular-nums;
     }
+    .sv-p { color: var(--success); }
+    .sv-a { color: var(--danger); }
+    .sv-pm { color: var(--accent); }
 
-    .stat-label {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .stat-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* === TABLE === */
+    .table-section-title {
+      font-size: 0.7rem; font-weight: 800; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
     }
+    .table-section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%); }
 
     .table-card {
-      background: var(--glass-bg);
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin-bottom: 40px;
+      border-radius: 16px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 32px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     }
 
     table { width: 100%; border-collapse: collapse; }
-    th { text-align: left; padding: 18px 24px; background: #fafafa; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 800; border-bottom: 1px solid var(--border); }
-    td { padding: 18px 24px; border-bottom: 1px solid var(--border); font-weight: 600; }
-    
-    .status-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
+    th {
+      text-align: left; padding: 14px 20px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e8edf5 100%);
+      font-size: 0.7rem; color: var(--primary); text-transform: uppercase;
+      font-weight: 800; letter-spacing: 0.06em;
+      border-bottom: 2px solid var(--border);
     }
+    td { padding: 14px 20px; border-bottom: 1px solid #f8fafc; font-weight: 600; background: white; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafcff; }
+    tbody tr { animation: rowReveal 0.4s ease both; }
+    @keyframes rowReveal { from { opacity:0; transform:translateX(-10px); } to { opacity:1; transform:translateX(0); } }
 
-    .badge-present { background: #dcfce7; color: #15803d; }
-    .badge-absent { background: #fee2e2; color: #991b1b; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 14px; border-radius: 9px;
+      font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-present    { background: #dcfce7; color: #15803d; }
+    .badge-absent     { background: #fee2e2; color: #991b1b; }
     .badge-permission { background: #fffbeb; color: #b45309; }
-    .badge-detained { background: #f1f5f9; color: #475569; }
+    .badge-detained   { background: #f1f5f9; color: #475569; }
 
+    .roll-num { font-family: 'Courier New', monospace; font-weight: 800; font-size: 1rem; color: var(--primary); }
+
+    /* === ACTIONS === */
     .actions-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    @media (max-width: 600px) {
-      .actions-grid { grid-template-columns: 1fr; }
-      .container { padding: 24px; }
-      h2 { font-size: 1.75reml; }
+      gap: 14px;
     }
 
     .btn {
-      padding: 16px 20px;
-      border-radius: 12px;
-      font-weight: 700;
-      font-size: 1rem;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
+      padding: 15px 18px; border-radius: 13px; font-weight: 800; font-size: 0.92rem;
+      border: none; cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; font-family: inherit; position: relative; overflow: hidden;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    /* Ripple */
+    .ripple-effect { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.35); transform: scale(0); animation: ripple 0.55s linear; pointer-events: none; }
+    @keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+    .btn-post     { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; box-shadow: 0 4px 14px rgba(0,51,102,0.3); }
+    .btn-post:hover { box-shadow: 0 8px 25px rgba(0,51,102,0.45); }
+    .btn-whatsapp { background: linear-gradient(135deg, #128c7e 0%, #075e54 100%); color: white; box-shadow: 0 4px 14px rgba(18,140,126,0.3); }
+    .btn-whatsapp:hover { box-shadow: 0 8px 25px rgba(18,140,126,0.4); }
+    .btn-pdf      { background: linear-gradient(135deg, #475569 0%, #334155 100%); color: white; box-shadow: 0 4px 14px rgba(71,85,105,0.3); }
+    .btn-edit     { background: white; color: var(--primary); border: 2px solid var(--primary); }
+    .btn-edit:hover { background: #f0f4ff; }
+    .btn-logout   { background: white; color: var(--danger); border: 2px solid #fee2e2; grid-column: 1 / -1; margin-top: 4px; }
+    .btn-logout:hover { background: #fff5f5; }
+
+    .btn.posted {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      box-shadow: 0 4px 14px rgba(16,185,129,0.3);
     }
 
-    .btn-post { background: var(--primary); color: white; border-bottom: 4px solid var(--primary-dark); }
-    .btn-post:hover { background: var(--primary-dark); transform: scale(1.02); }
-    .btn-post:active { transform: translateY(2px); border-bottom-width: 0; }
+    /* === SUCCESS BURST === */
+    .success-burst {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 9998;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .burst-circle {
+      width: 0; height: 0; border-radius: 50%;
+      background: radial-gradient(circle, rgba(16,185,129,0.4) 0%, transparent 70%);
+      animation: burst 0.7s ease-out forwards;
+    }
+    @keyframes burst {
+      from { width: 0; height: 0; opacity: 1; }
+      to   { width: 500px; height: 500px; opacity: 0; }
+    }
 
-    .btn-whatsapp { background: #128c7e; color: white; }
-    .btn-pdf { background: #475569; color: white; }
-    .btn-edit { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
-    .btn-logout { background: transparent; color: var(--danger); border: 2px solid #fee2e2; grid-column: 1 / -1; margin-top: 10px; }
+    /* === TOAST === */
+    .toast-container { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .toast {
+      padding: 14px 24px; border-radius: 12px; color: white; font-weight: 700; font-size: 0.9rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      animation: toastDrop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      display: flex; align-items: center; gap: 10px; min-width: 260px; justify-content: center;
+    }
+    @keyframes toastDrop { from { opacity:0; transform:translateY(-20px); } to { opacity:1; transform:translateY(0); } }
+    .toast-success { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .toast-error   { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 
-    .btn:hover { opacity: 0.9; }
-
-    .message {
-      position: fixed;
-      top: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 16px 32px;
-      border-radius: 12px;
-      color: white;
-      font-weight: 700;
-      z-index: 1000;
-      display: none;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    @media (max-width: 600px) {
+      .actions-grid { grid-template-columns: 1fr; }
+      .main-card { padding: 24px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .hero-banner { padding: 32px 16px 70px; }
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-  <div id="statusMsg" class="message"></div>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Hero Banner -->
+  <div class="hero-banner">
+    <img src="https://image2url.com/r2/default/images/1773668714074-7eaefdc5-c41e-4f3b-a408-a1285f72e3c4.png" alt="Lendi Logo" class="hero-logo">
+    <h2 class="hero-title">
+      <span class="grad-text">Attendance</span> Summary
+    </h2>
+    <p class="hero-sub" id="heroSub">Loading session details...</p>
+  </div>
 
   <div class="container">
-    <header>
-      <div style="margin-bottom: 20px; text-align: center;">
-        <img src="college-logo.png" style="height: 70px; width: auto; object-fit: contain;">
+    <div class="main-card">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card sc-present">
+          <span id="presentCount" class="stat-val sv-p">0</span>
+          <span class="stat-label">Present</span>
+        </div>
+        <div class="stat-card sc-absent">
+          <span id="absentCount" class="stat-val sv-a">0</span>
+          <span class="stat-label">Absent</span>
+        </div>
+        <div class="stat-card sc-perm">
+          <span id="permissionCount" class="stat-val sv-pm">0</span>
+          <span class="stat-label">Permission</span>
+        </div>
       </div>
-      <h2 id="summaryHeading">Class Attendance Summary</h2>
-      <span id="dateLabel" class="date-label">Date Loading...</span>
-    </header>
-    
-    <div class="stats-container">
-      <div class="stat-card" style="border-top: 4px solid var(--primary);">
-        <span id="presentCount" class="stat-val" style="color: var(--secondary);">0</span>
-        <span class="stat-label">Presents</span>
-      </div>
-      <div class="stat-card" style="border-top: 4px solid var(--danger);">
-        <span id="absentCount" class="stat-val" style="color: var(--danger);">0</span>
-        <span class="stat-label">Absents</span>
-      </div>
-      <div class="stat-card" style="border-top: 4px solid var(--accent);">
-        <span id="permissionCount" class="stat-val" style="color: var(--accent);">0</span>
-        <span class="stat-label">Permission</span>
-      </div>
-    </div>
 
-    <div class="table-card">
-      <table id="resultTable">
-        <thead><tr><th>Student Roll Number</th><th>Attendance Status</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    
-    <div class="actions-grid">
-      <button id="postToAdminBtn" class="btn btn-post">
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        Post Summary to Admin
-      </button>
+      <!-- Table -->
+      <div class="table-section-title">Student Records</div>
+      <div class="table-card">
+        <table id="resultTable">
+          <thead>
+            <tr>
+              <th>Student Roll Number</th>
+              <th>Attendance Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
 
-      <button id="sendWhatsappBtn" class="btn btn-whatsapp">
-        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
-        Notify Absentees
-      </button>
-
-      <button id="downloadBtn" class="btn btn-pdf">Download PDF</button>
-      <button id="backToAttendanceBtn" class="btn btn-edit">Edit Records</button>
-      <button id="logoutBtn" class="btn btn-logout">Sign Out</button>
+      <!-- Actions -->
+      <div class="actions-grid">
+        <button id="postToAdminBtn" class="btn btn-post">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          Post to Admin
+        </button>
+        <button id="sendWhatsappBtn" class="btn btn-whatsapp">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01C17.18 3.03 14.69 2 12.04 2z"/></svg>
+          Notify Absentees
+        </button>
+        <button id="downloadBtn" class="btn btn-pdf">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 10v6m0 0l-3-3m3 3l3-3M3 15a4 4 0 004 4h10a4 4 0 000-8h-1a5 5 0 00-9.9-1"/></svg>
+          Download PDF
+        </button>
+        <button id="backToAttendanceBtn" class="btn btn-edit">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+          Edit Records
+        </button>
+        <button id="logoutBtn" class="btn btn-logout">Sign Out</button>
+      </div>
     </div>
   </div>
 
   <script>
     const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (!user) window.location.href = "auth.html";
+    const API_URL = `http://${window.location.hostname}:5000/api`;
 
     const attendanceData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
     let presentVal = 0, absentVal = 0, permissionVal = 0, detainedVal = 0;
-    
     attendanceData.forEach(r => {
-      if (r.status === 'present') presentVal++;
-      else if (r.status === 'absent') absentVal++;
+      if (r.status === 'present')    presentVal++;
+      else if (r.status === 'absent')  absentVal++;
       else if (r.status === 'permission') permissionVal++;
-      else if (r.status === 'detained') detainedVal++;
+      else if (r.status === 'detained')   detainedVal++;
     });
 
-    document.getElementById('presentCount').textContent = presentVal;
-    document.getElementById('absentCount').textContent = absentVal;
-    document.getElementById('permissionCount').textContent = permissionVal;
-
-    const summary = JSON.parse(localStorage.getItem('attendanceSummary') || '{}');
+    const summary     = JSON.parse(localStorage.getItem('attendanceSummary') || '{}');
     const sectionName = summary.section || 'Unknown';
-    const reqDate = localStorage.getItem('attendanceDate') || new Date().toISOString().split('T')[0];
-    document.getElementById('dateLabel').textContent = `${sectionName} • ${reqDate}`;
+    const reqDate     = localStorage.getItem('attendanceDate') || new Date().toISOString().split('T')[0];
+    document.getElementById('heroSub').textContent = `${sectionName} • ${reqDate}`;
 
+    // Animated count-up
+    function animateCount(el, target, duration = 1000) {
+      const start = Date.now();
+      const tick = () => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        el.textContent = Math.round(eased * target);
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      tick();
+    }
+
+    // Start count-up after a short delay for entrance effect
+    setTimeout(() => {
+      animateCount(document.getElementById('presentCount'),    presentVal,    1200);
+      animateCount(document.getElementById('absentCount'),     absentVal,     1200);
+      animateCount(document.getElementById('permissionCount'), permissionVal, 1200);
+    }, 400);
+
+    // Populate table with staggered animation
     const tbody = document.querySelector('#resultTable tbody');
-    attendanceData.forEach(r => {
+    attendanceData.forEach((r, idx) => {
       const tr = document.createElement('tr');
-      const badgeCls = `badge-${r.status}`;
+      tr.style.animationDelay = `${idx * 35}ms`;
+      const icon = r.status === 'present' ? '✓' : (r.status === 'absent' ? '✕' : '◎');
       tr.innerHTML = `
-        <td style="font-family: monospace; font-size: 1.1rem;">${r.registerNumber}</td>
-        <td><span class="status-badge ${badgeCls}">${r.status}</span></td>
-      `;
+        <td><span class="roll-num">${r.registerNumber}</span></td>
+        <td><span class="status-badge badge-${r.status}">${icon} ${r.status.toUpperCase()}</span></td>`;
       tbody.appendChild(tr);
     });
 
-    function showMsg(msg, isError = false) {
-      const el = document.getElementById('statusMsg');
-      el.textContent = msg;
-      el.style.background = isError ? 'var(--danger)' : 'var(--secondary)';
-      el.style.display = 'block';
-      setTimeout(() => el.style.display = 'none', 3000);
+    // Ripple
+    function addRipple(btn, e) {
+      const rect = btn.getBoundingClientRect();
+      const r = document.createElement('span');
+      r.className = 'ripple-effect';
+      const size = Math.max(rect.width, rect.height) * 2;
+      r.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+      btn.appendChild(r);
+      setTimeout(() => r.remove(), 650);
+    }
+    document.querySelectorAll('.btn').forEach(btn => btn.addEventListener('click', e => addRipple(btn, e)));
+
+    // Toast
+    function showToast(msg, type = 'success') {
+      const c = document.getElementById('toastContainer');
+      const t = document.createElement('div');
+      t.className = `toast toast-${type}`;
+      t.innerHTML = `<span>${type === 'success' ? '✓' : '✕'}</span> ${msg}`;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(() => t.remove(), 300); }, 3500);
     }
 
-    document.getElementById('postToAdminBtn').onclick = async () => {
+    // Success burst
+    function triggerBurst() {
+      const burst = document.createElement('div');
+      burst.className = 'success-burst';
+      burst.innerHTML = '<div class="burst-circle"></div>';
+      document.body.appendChild(burst);
+      setTimeout(() => burst.remove(), 800);
+    }
+
+    document.getElementById('postToAdminBtn').onclick = async (e) => {
+      const btn = document.getElementById('postToAdminBtn');
       const preferredSectionId = localStorage.getItem('preferredSectionId') || (user.type === 'cr' ? user.section : null);
-      if (!preferredSectionId) return showMsg('Section error', true);
+      if (!preferredSectionId) return showToast('Section error', 'error');
 
       try {
-        const res = await fetch('http://localhost:5000/api/attendance/finalize', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(`${API_URL}/attendance/finalize`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ date: reqDate, sectionId: preferredSectionId })
         });
         if (res.ok) {
-          showMsg('Sucessfully posted to Administrator!');
-          document.getElementById('postToAdminBtn').disabled = true;
-          document.getElementById('postToAdminBtn').textContent = '✅ Summary Posted';
-          document.getElementById('postToAdminBtn').style.opacity = '0.5';
+          triggerBurst();
+          showToast('Successfully posted to Administrator!');
+          btn.classList.add('posted');
+          btn.disabled = true;
+          btn.innerHTML = `<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg> Summary Posted`;
         } else {
-          showMsg('Post failed', true);
+          showToast('Post failed', 'error');
         }
-      } catch (err) { alert('Network error'); }
-    }
+      } catch (err) { showToast('Network error', 'error'); }
+    };
 
     document.getElementById('downloadBtn').onclick = () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.text("Attendance Report", 15, 20);
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.text(`Section: ${sectionName}`, 15, 30);
       doc.text(`Date: ${reqDate}`, 15, 37);
-      
-      const stats = `Present: ${presentVal} | Absent: ${absentVal} | Permission: ${permissionVal}`;
-      doc.text(stats, 15, 47);
-
+      doc.text(`Present: ${presentVal} | Absent: ${absentVal} | Permission: ${permissionVal}`, 15, 44);
       doc.autoTable({
         head: [['Roll Number', 'Status']],
         body: attendanceData.map(r => [r.registerNumber, r.status.toUpperCase()]),
-        startY: 55,
-        theme: 'striped',
-        headStyles: { fillColor: [99, 102, 241] }
+        startY: 52, theme: 'striped',
+        headStyles: { fillColor: [0, 51, 102] }
       });
       doc.save(`Summary_${sectionName}_${reqDate}.pdf`);
+      showToast("PDF downloaded ✓");
     };
 
     document.getElementById('sendWhatsappBtn').onclick = () => {

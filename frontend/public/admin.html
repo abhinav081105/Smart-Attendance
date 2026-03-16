@@ -7,183 +7,541 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
   <style>
+    /* ─── Design Tokens ─── */
     :root {
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --secondary: #10b981;
-      --danger: #ef4444;
-      --background: #f8fafc;
-      --sidebar: #0f172a;
+      --primary: #003366;
+      --primary-dark: #001a33;
+      --primary-glow: rgba(0,51,102,0.15);
+      --secondary: #ffcc00;
+      --secondary-glow: rgba(255,204,0,0.2);
+      --danger: #d32f2f;
+      --success: #15803d;
+      --background: #eef2f7;
+      --sidebar: #001e3c;
+      --sidebar-hover: rgba(255,255,255,0.07);
       --card: #ffffff;
-      --text-main: #1e293b;
-      --text-muted: #64748b;
-      --border: #f1f5f9;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      --text-main: #0a192f;
+      --text-muted: #546e7a;
+      --border: #dde3ea;
+      --shadow: 0 4px 24px rgba(0,51,102,0.08);
+      --shadow-lg: 0 12px 40px rgba(0,51,102,0.14);
+      --radius: 20px;
+      --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
     }
 
     * { box-sizing: border-box; }
 
+    /* ─── Global ─── */
     body {
       font-family: 'Outfit', sans-serif;
       background: var(--background);
       margin: 0;
       color: var(--text-main);
       display: flex;
+      min-height: 100vh;
     }
 
+    /* Subtle animated gradient background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at 20% 20%, rgba(0,51,102,0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(255,204,0,0.04) 0%, transparent 50%);
+      animation: bgShift 15s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+    @keyframes bgShift {
+      from { transform: translate(0,0) rotate(0deg); }
+      to   { transform: translate(2%,2%) rotate(3deg); }
+    }
+
+    /* ─── Sidebar ─── */
     .sidebar {
       width: 280px;
       height: 100vh;
       background: var(--sidebar);
       color: white;
-      padding: 40px 0;
+      padding: 0;
       position: fixed;
       display: flex;
       flex-direction: column;
-      box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+      box-shadow: 6px 0 40px rgba(0,0,0,0.18);
       z-index: 1000;
-      transition: all 0.3s ease;
+      transition: left var(--transition), box-shadow var(--transition);
+      overflow: hidden;
+    }
+
+    /* Sidebar glow strip */
+    .sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 2px; height: 100%;
+      background: linear-gradient(180deg, transparent, var(--secondary), transparent);
+      opacity: 0.4;
     }
 
     .sidebar-header {
-      padding: 0 30px 40px 30px;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.05em;
-      color: #6366f1;
+      padding: 28px 24px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      position: relative;
+    }
+    .sidebar-header img {
+      height: 55px; width: auto; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(255,204,0,0.4));
+      transition: transform 0.4s ease;
+    }
+    .sidebar-header img:hover { transform: scale(1.08) rotate(-2deg); }
+    .sidebar-header .brand-label {
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em;
+      color: var(--secondary); text-transform: uppercase;
     }
 
-    .sidebar-nav { flex: 1; }
+    .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .sidebar-nav::-webkit-scrollbar { width: 3px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
 
+    /* ─── Tab Buttons ─── */
     .tab-btn {
       width: 100%;
-      padding: 18px 30px;
+      padding: 15px 24px;
       background: transparent;
-      border: none;
-      color: #94a3b8;
+      border: none; border-left: 3px solid transparent;
+      color: rgba(255,255,255,0.5);
       text-align: left;
-      font-size: 1rem;
+      font-size: 0.9rem;
+      font-family: inherit;
       font-weight: 600;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 12px;
-      transition: all 0.2s ease;
+      gap: 14px;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
     }
+    .tab-btn::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.06), transparent);
+      transform: translateX(-100%);
+      transition: transform var(--transition);
+    }
+    .tab-btn:hover { color: white; border-left-color: rgba(255,204,0,0.4); }
+    .tab-btn:hover::before { transform: translateX(0); }
+    .tab-btn:hover svg { transform: scale(1.15); }
+    .tab-btn svg { transition: transform var(--transition); flex-shrink: 0; }
 
-    .tab-btn:hover { background: rgba(255,255,255,0.05); color: white; }
-    .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4); }
+    .tab-btn.active {
+      color: white;
+      background: linear-gradient(90deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+      border-left: 3px solid var(--secondary);
+    }
+    .tab-btn.active svg { color: var(--secondary); }
 
+    /* ─── Main Content ─── */
     .main-content {
       margin-left: 280px;
       flex: 1;
-      padding: 48px;
+      padding: 40px;
       max-width: 1400px;
+      position: relative;
+      z-index: 1;
     }
 
+    /* ─── Header ─── */
     .header-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 40px;
+      margin-bottom: 36px;
     }
 
-    h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.05em; margin: 0; color: #0f172a; }
-    h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 24px; display: flex; align-items: center; gap: 10px; }
+    h2 { font-size: 2rem; font-weight: 800; letter-spacing: -0.05em; margin: 0; color: var(--primary); }
+    h3 { font-size: 1.15rem; font-weight: 700; margin: 0 0 22px; display: flex; align-items: center; gap: 10px; color: var(--primary); }
 
+    /* ─── Cards ─── */
     .admin-card {
       background: var(--card);
-      border-radius: 24px;
-      padding: 32px;
+      border-radius: var(--radius);
+      padding: 30px;
       box-shadow: var(--shadow);
-      margin-bottom: 32px;
-      border: 1px solid var(--border);
+      margin-bottom: 28px;
+      border: 1px solid rgba(0,0,0,0.05);
+      transition: box-shadow var(--transition), transform var(--transition);
+      animation: cardIn 0.4s ease-out both;
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), #0066cc);
+      transform: scaleX(0);
+      transform-origin: left;
       transition: transform 0.3s ease;
     }
+    .admin-card:hover::before { transform: scaleX(1); }
+    .admin-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
 
-    .admin-card:hover { transform: translateY(-2px); }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
+    /* Stagger children cards */
+    .tab-content .admin-card:nth-child(1) { animation-delay: 0.05s; }
+    .tab-content .admin-card:nth-child(2) { animation-delay: 0.12s; }
+    .tab-content .admin-card:nth-child(3) { animation-delay: 0.2s; }
+
+    /* Tab content fade transition */
+    .tab-content { animation: fadeSlide 0.35s ease-out both; }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Forms ─── */
     .form-inline {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
       margin-bottom: 24px;
-      padding: 24px;
-      background: #fafafa;
-      border-radius: 16px;
+      padding: 20px;
+      background: #f6f9fc;
+      border-radius: 14px;
       border: 1px solid var(--border);
     }
 
     input, select {
-      padding: 14px 18px;
+      padding: 13px 16px;
       border-radius: 12px;
-      border: 1px solid #e2e8f0;
+      border: 1.5px solid #e2e8f0;
       font-size: 0.95rem;
       font-family: inherit;
       font-weight: 600;
       background: white;
+      transition: border-color var(--transition), box-shadow var(--transition);
     }
-    input:focus { border-color: var(--primary); outline: none; }
+    input:focus, select:focus {
+      border-color: var(--primary);
+      outline: none;
+      box-shadow: 0 0 0 4px var(--primary-glow);
+    }
 
+    /* ─── Buttons ─── */
     button {
       background: var(--primary);
       color: white;
       border: none;
-      padding: 14px 24px;
+      padding: 13px 22px;
       border-radius: 12px;
       font-weight: 700;
+      font-family: inherit;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    /* Ripple */
+    button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, rgba(255,255,255,0.35) 0%, transparent 70%);
+      transform: scale(0);
+      opacity: 0;
+      transition: transform 0.5s ease, opacity 0.5s ease;
+    }
+    button:active::after { transform: scale(2.5); opacity: 1; }
+    button:hover { background: var(--primary-dark); box-shadow: 0 6px 20px var(--primary-glow); transform: translateY(-1px); }
+    button:active { transform: scale(0.97); }
+
+    .btn-danger { background: #fff0f0; color: var(--danger); border: 1px solid #fecaca; }
+    .btn-danger:hover { background: var(--danger); color: white; box-shadow: 0 6px 20px rgba(211,47,47,0.3); }
+
+    /* ─── Tables ─── */
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    th {
+      text-align: left; padding: 14px 16px;
+      font-weight: 800; font-size: 0.7rem;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+      border-bottom: 2px solid var(--border);
+      background: #f8fafc;
+    }
+    td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-weight: 600; font-size: 0.9rem; }
+    tr { transition: background var(--transition); }
+    tr:hover td { background: #f0f7ff; }
+
+    /* Table row staggered fade-in (applied via JS) */
+    tbody tr { animation: rowIn 0.3s ease-out both; }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
 
-    button:hover { background: var(--primary-dark); transform: scale(1.02); }
-    .btn-danger { background: #fee2e2; color: var(--danger); }
-    .btn-danger:hover { background: var(--danger); color: white; }
+    /* ─── Badges ─── */
+    .detained-badge { background: #fee2e2; color: #b91c1c; padding: 5px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 700; }
+    .active-badge {
+      background: #dcfce7; color: var(--success);
+      padding: 5px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 700;
+      position: relative;
+    }
+    /* Pulsing dot on active badge */
+    .active-badge::before {
+      content: '';
+      display: inline-block; width: 7px; height: 7px;
+      background: var(--success); border-radius: 50%;
+      margin-right: 6px; vertical-align: middle;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.6); opacity: 0.5; }
+    }
 
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th { text-align: left; padding: 18px; font-weight: 800; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 2px solid var(--border); }
-    td { padding: 18px; border-bottom: 1px solid var(--border); font-weight: 600; }
-    tr:hover td { background: #fdfdfd; }
+    /* ─── Pending count badge ─── */
+    #pendingCount {
+      background: var(--secondary); color: var(--primary);
+      padding: 2px 7px; border-radius: 99px; font-size: 10px;
+      margin-left: 5px; display: none;
+      animation: pop 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    @keyframes pop {
+      from { transform: scale(0); }
+      to   { transform: scale(1); }
+    }
 
+    /* ─── Toast Message ─── */
     .message {
       position: fixed;
-      top: 30px;
-      right: 30px;
-      padding: 16px 24px;
-      border-radius: 16px;
+      top: 24px; right: 24px;
+      padding: 14px 22px;
+      border-radius: 14px;
       color: white;
       font-weight: 700;
-      z-index: 2000;
+      z-index: 3000;
       display: none;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+      backdrop-filter: blur(8px);
+      min-width: 240px;
+      animation: toastIn 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
     }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes toastIn {
+      from { transform: translateX(110%) scale(0.9); opacity: 0; }
+      to   { transform: translateX(0) scale(1); opacity: 1; }
+    }
 
-    .detained-badge { background: #fee2e2; color: #b91c1c; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
-    .active-badge { background: #dcfce7; color: #15803d; padding: 6px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; }
+    /* ─── Modal ─── */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      z-index: 2001;
+      align-items: center; justify-content: center;
+    }
+    .modal-content {
+      background: white; padding: 40px;
+      border-radius: 26px; width: 90%; max-width: 600px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.3);
+      animation: modalIn 0.3s cubic-bezier(0.175,0.885,0.32,1.275);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.9) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
 
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2001; align-items: center; justify-content: center; }
-    .modal-content { background: white; padding: 40px; border-radius: 28px; width: 90%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+    /* ─── Sidebar bottom ─── */
+    #logoutBtn {
+      background: transparent; color: rgba(255,255,255,0.5);
+      border: 1px solid rgba(255,255,255,0.12);
+      margin: 0; width: 100%;
+    }
+    #logoutBtn:hover {
+      background: rgba(211,47,47,0.15);
+      color: #ff6b6b;
+      border-color: rgba(211,47,47,0.4);
+      box-shadow: none; transform: none;
+    }
 
-    #logoutBtn { background: transparent; color: #94a3b8; border: 1px solid #334155; margin-top: auto; margin: 20px 30px; }
-    #logoutBtn:hover { background: #fee2e2; color: var(--danger); border-color: #fecaca; }
+    /* ─── Stats Grid ─── */
+    .report-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+    .report-stat-card {
+      background: linear-gradient(135deg, #f8fafc, #f0f7ff);
+      padding: 18px; border-radius: 14px; text-align: center;
+      border: 1px solid var(--border);
+      transition: transform var(--transition);
+    }
+    .report-stat-card:hover { transform: translateY(-2px); }
+    .report-stat-val { font-size: 1.4rem; font-weight: 800; color: var(--primary); display: block; }
+    .report-stat-label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
-    .report-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-    .report-stat-card { background: #f8fafc; padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
-    .report-stat-val { font-size: 1.25rem; font-weight: 800; color: var(--primary); display: block; }
-    .report-stat-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+    /* ─── Skeleton Loader ─── */
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 8px;
+    }
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
 
-    /* Mobile Responsive Sidebar */
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,51,102,0.2); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(0,51,102,0.4); }
+
+
+    .mobile-toggle {
+        display: none;
+        background: white;
+        color: var(--primary);
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .mobile-toggle:hover { background: var(--primary); color: white; }
+
+    /* ═══════════════════════════════════════
+       MOBILE RESPONSIVE — Full Overhaul
+    ═══════════════════════════════════════ */
     @media (max-width: 900px) {
-        .sidebar { width: 80px; }
-        .sidebar span, .tab-btn span { display: none; }
-        .main-content { margin-left: 80px; padding: 24px; }
-        .tab-btn { justify-content: center; padding: 20px 0; }
+        /* Sidebar — off-canvas drawer */
+        .sidebar { 
+            left: -290px; 
+            width: 280px; 
+            box-shadow: none; 
+            height: 100%;
+            overflow-y: auto;
+        }
+        .sidebar.active { 
+            left: 0; 
+            box-shadow: 10px 0 30px rgba(0,0,0,0.35); 
+        }
+        .sidebar span, .tab-btn span { 
+            display: inline !important; 
+        }
+
+        /* Main content — full width */
+        .main-content { 
+            margin-left: 0 !important; 
+            padding: 16px !important; 
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Header */
+        .header-bar {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .header-bar h2 { font-size: 1.25rem; }
+
+        /* Toggle button */
+        .mobile-toggle { 
+            display: flex !important; 
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* Cards */
+        .admin-card {
+            padding: 18px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+        .admin-card:hover { transform: none; }
+
+        /* Form inputs — stack vertically */
+        .form-inline {
+            flex-direction: column;
+            padding: 16px;
+            gap: 10px;
+        }
+        .form-inline input,
+        .form-inline select,
+        .form-inline button {
+            width: 100% !important;
+            font-size: 1rem;
+        }
+
+        /* All inputs/selects fill width */
+        input, select {
+            width: 100%;
+            padding: 13px 14px;
+            font-size: 0.95rem;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        button { 
+            padding: 13px 18px;
+            font-size: 0.95rem;
+        }
+
+        /* Tables — convert to card rows */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { font-size: 0.78rem; min-width: 480px; }
+        th { padding: 10px 8px; font-size: 0.65rem; }
+        td { padding: 10px 8px; }
+
+        /* Stats grid */
+        .report-stat-grid { 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 10px;
+        }
+
+        /* Modal */
+        .modal-content { 
+            padding: 24px; 
+            border-radius: 20px;
+            width: 95%;
+        }
+
+        /* Message toast */
+        .message { right: 10px; top: 10px; left: 10px; right: 10px; font-size: 0.85rem; padding: 12px 16px; }
+        
+        /* h3 headings inside cards */
+        h3 { font-size: 1.05rem; margin-bottom: 16px; }
+
+        /* Section CRs display */
+        #crsDisplay { word-break: break-all; font-size: 0.8rem; }
+    }
+
+    @media (max-width: 400px) {
+        .header-bar h2 { font-size: 1rem; }
+        .admin-card { padding: 14px; }
+        .report-stat-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 900px) {
+        .geo-grid { grid-template-columns: 1fr !important; }
+        #geoMap { height: 250px !important; }
     }
   </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -191,7 +549,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body>
+<body onclick="checkSidebar(event)">
+  <div id="sidebarOverlay" onclick="toggleSidebar()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); backdrop-filter:blur(2px); z-index:999;"></div>
   <div id="crModal" class="modal">
     <div class="modal-content">
       <h3>Authorize Section CRs</h3>
@@ -208,41 +567,81 @@
     </div>
   </div>
 
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <h3>Authentication Settings</h3>
+      <div class="form-group">
+        <label>Current Master Password</label>
+        <input type="password" id="oldAdminPass" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label>New Master Password</label>
+        <input type="password" id="newAdminPassChange" style="width:100%">
+      </div>
+      <div style="margin-top: 32px; display: flex; gap: 12px; justify-content: flex-end;">
+        <button onclick="closePasswordModal()" style="background: #f1f5f9; color: var(--text-main);">Cancel</button>
+        <button onclick="updateAdminPassword()">Update Root Access</button>
+      </div>
+    </div>
+  </div>
+
   <div class="sidebar">
     <div class="sidebar-header" style="flex-direction: column; align-items: center; gap: 8px; background: white; margin: 0 15px 20px 15px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-      <img src="college-logo.png" style="height: 60px; width: auto; object-fit: contain;">
-      <span style="font-size: 0.8rem; margin-top: 5px; color: var(--text-main); font-weight: 800; letter-spacing: 0.05em;">ADMIN CONTROL</span>
+      <img src="https://image2url.com/r2/default/images/1773668714074-7eaefdc5-c41e-4f3b-a408-a1285f72e3c4.png">
+      <span class="brand-label">Admin Control</span>
     </div>
     <div class="sidebar-nav">
       <button class="tab-btn active" data-tab="sections">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
-        <span>Sections</span>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+        <span>Institutional Space</span>
       </button>
       <button class="tab-btn" data-tab="students">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87m-4-12a4 4 0 010 7.75"/></svg>
-        <span>Students</span>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Student Roster</span>
+      </button>
+      <button class="tab-btn" data-tab="attendance-edit">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>Manage Attendance</span>
+      </button>
+      <button class="tab-btn" data-tab="approvals" id="approvalsTab">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Pending Approvals <b id="pendingCount">0</b></span>
       </button>
       <button class="tab-btn" data-tab="users">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-1.496-7.448a4.805 4.805 0 010-9.607m4.05 13.112a8.986 8.986 0 011.02 3.937m0-11c0 3.517 1.009 6.799 2.753 9.571m1.496-7.448a4.805 4.805 0 010-9.607m-4.05 13.112a8.986 8.986 0 01-1.02 3.937"/></svg>
-        <span>Access & Security</span>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-1.496-7.448a4.805 4.805 0 010-9.607"/></svg>
+        <span>Authentication</span>
       </button>
       <button class="tab-btn" data-tab="geofencing">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="11" r="3"/><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="11" r="3"/><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
         <span>Geo-Tagging</span>
       </button>
       <button class="tab-btn" data-tab="reports">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span>Reports</span>
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+        <span>Performance & Release</span>
+      </button>
+      <button class="tab-btn" data-tab="audit">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        <span>Audit Trail</span>
       </button>
     </div>
-    <button id="logoutBtn">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4m7 14l5-5-5-5m5 5H9"/></svg>
-        <span>Sign Out</span>
-    </button>
+    
+    <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto;">
+        <button id="settingsBtn" style="width:100%; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.05); color:white; border:none; padding:12px; border-radius:10px; cursor:pointer;" onclick="openPasswordModal()">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span>Auth Settings</span>
+        </button>
+        <button id="logoutBtn" style="width:100%; display:flex; align-items:center; gap:10px; background:#d32f2f; color:white; border:none; padding:12px; border-radius:10px; cursor:pointer; margin-top:10px;">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span>Sign Out</span>
+        </button>
+    </div>
   </div>
 
   <div class="main-content">
     <div class="header-bar">
+      <button class="mobile-toggle" onclick="toggleSidebar()">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
       <h2>Administrative Dashboard</h2>
       <div id="statusMsg" class="message"></div>
     </div>
@@ -256,10 +655,12 @@
           <input type="text" id="branchName" placeholder="Full Name (e.g. CSE)" required>
           <button type="submit">Add New Branch</button>
         </form>
+        <div class="table-responsive">
         <table>
           <thead><tr><th>ID</th><th>Department Name</th><th>Control</th></tr></thead>
           <tbody id="branchesTableBody"></tbody>
         </table>
+        </div>
       </div>
 
       <div class="admin-card">
@@ -270,14 +671,55 @@
           <input type="text" id="sectionName" placeholder="Sec Name (A, B...)" required>
           <button type="submit">Initialize Section</button>
         </form>
+        <div class="table-responsive">
         <table>
           <thead><tr><th>Year</th><th>Branch</th><th>Sec</th><th>Active CRs</th><th>Actions</th></tr></thead>
           <tbody id="sectionsTableBody"></tbody>
         </table>
+        </div>
+      </div>
+
+      <div class="admin-card" style="border-top: 5px solid var(--secondary)">
+        <h3>Subject Master & Period Assignment</h3>
+        <form id="addSubjectForm" class="form-inline">
+          <select id="subjectSection" required><option value="">Select Section</option></select>
+          <input type="text" id="subjectName" placeholder="Subject Name (e.g. DAA)" required>
+          <select id="subjectFaculty" required><option value="">Assigned Teacher</option></select>
+          <button type="submit" style="background: var(--secondary)">Bind Subject</button>
+        </form>
+        <div class="table-responsive">
+        <table>
+            <thead><tr><th>Section</th><th>Subject</th><th>Teacher</th><th>Held</th><th>Action</th></tr></thead>
+            <tbody id="subjectsTableBody"></tbody>
+        </table>
+        </div>
       </div>
     </div>
 
-    <!-- STUDENTS TAB -->
+    <!-- ATTENDANCE EDIT TAB -->
+    <div id="attendance-edit" class="tab-content" style="display:none">
+        <div class="admin-card">
+            <h3>Modify Class Attendance</h3>
+            <div class="form-inline" style="background:#f0f7ff; border-color:#003366">
+                <select id="editAttendanceSection" style="flex:1" onchange="loadAttendanceRecordsForEdit()"><option value="">Select Section</option></select>
+                <input type="date" id="editAttendanceDate" onchange="loadAttendanceRecordsForEdit()">
+            </div>
+            <div id="attendanceEditArea" style="margin-top:20px;">
+                <!-- Attendance list per student for editing -->
+                 <p style="text-align:center; color:var(--text-muted); padding:20px;">Select a section and date to modify attendance.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPROVALS TAB -->
+    <div id="approvals" class="tab-content" style="display:none">
+        <div class="admin-card">
+            <h3>Verification Requests (Pending Authorization)</h3>
+            <div id="approvalsList">
+                <!-- Pending users here -->
+            </div>
+        </div>
+    </div>
     <div id="students" class="tab-content" style="display:none">
       <div class="admin-card" style="background: #fdfdfd; border-left: 5px solid var(--secondary);">
         <h3>Batch Registration (Bulk)</h3>
@@ -296,10 +738,12 @@
           <label>Narrow Down View: </label>
           <select id="filterStudentSection" style="flex: 1"><option value="">Show All Registered Students</option></select>
         </div>
+        <div class="table-responsive">
         <table>
           <thead><tr><th>Roll Number</th><th>Student Name</th><th>Section</th><th>Status</th><th>Actions</th></tr></thead>
           <tbody id="studentsTableBody"></tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -328,10 +772,12 @@
 
       <div class="admin-card">
         <h3>Authorized Portal Users</h3>
+        <div class="table-responsive">
         <table>
           <thead><tr><th>Role</th><th>Identifier</th><th>System Email</th><th>Biometrics</th><th>Control</th></tr></thead>
           <tbody id="usersTableBody"></tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -346,7 +792,7 @@
         </div>
 
         <div id="geoDetailsArea" style="display: none; animation: slideIn 0.4s ease-out;">
-          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px;">
+          <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 32px;" class="geo-grid">
             <div class="admin-card" style="padding:0; overflow:hidden;">
               <div id="geoMap" style="height: 400px; width: 100%;"></div>
               <div style="padding: 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
@@ -357,14 +803,25 @@
             </div>
 
             <div class="admin-card">
-              <h3>Session Window</h3>
-              <div style="margin-bottom: 20px;">
-                <label>Clock-In Starts</label>
-                <input type="time" id="geoStart" style="width:100%; padding: 16px;">
+              <div style="margin-bottom: 24px;">
+                <label>Class In-charge (HOD/In-charge)</label>
+                <select id="geoInCharge" style="width:100%; padding: 12px;"></select>
               </div>
-              <div style="margin-bottom: 32px;">
-                <label>Clock-In Ends</label>
-                <input type="time" id="geoEnd" style="width:100%; padding: 16px;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+                <div>
+                  <label>Start Time</label>
+                  <input type="time" id="geoStart" style="width:100%">
+                </div>
+                <div>
+                  <label>End Time</label>
+                  <input type="time" id="geoEnd" style="width:100%">
+                </div>
+              </div>
+
+              <div style="margin-bottom: 32px; padding: 20px; background: #eef2f7; border-radius: 12px; border-left: 4px solid var(--secondary);">
+                <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.5;">
+                  <b>Square Surface Boundary:</b> Students must be within the specified square area (in meters) centered around the point picked on the map.
+                </p>
               </div>
               <button onclick="saveGeoSettings()" style="width: 100%; padding: 20px; background: var(--secondary)">Commit Changes</button>
             </div>
@@ -373,38 +830,126 @@
       </div>
     </div>
 
-    <!-- REPORTS TAB -->
-    <div id="reports" class="tab-content" style="display:none">
+    <!-- ATTENDANCE MANAGE TAB -->
+    <div id="attendance-edit" class="tab-content" style="display:none">
         <div class="admin-card">
-            <h3 style="justify-content: space-between;">
-                Attendance Logs & Analytics
-                <button onclick="loadAttendanceReports()" style="font-size: 0.8rem; background: var(--secondary)">Refresh Data</button>
-            </h3>
-            <p style="color: var(--text-muted); margin-bottom: 24px;">View all attendance records submitted by CRs and Faculty members.</p>
+            <h3>Manual Attendance Override</h3>
+            <p style="color:var(--text-muted); margin-bottom: 24px;">Administrators can manually correct attendance records here. All changes are logged to the audit trail.</p>
             
-            <div id="reportsList" style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- Reports will load here -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 24px;">
+                <select id="editAttendanceSection" style="padding: 12px;"></select>
+                <input type="date" id="editAttendanceDate" style="padding: 12px;">
+                <button onclick="loadAttendanceToEdit()" style="background: var(--primary)">Fetch Records</button>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table style="width:100%;">
+                    <thead><tr><th>Roll Number</th><th>Current Status</th><th>Action</th></tr></thead>
+                    <tbody id="editAttendanceBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ANALYTICS & RELEASE TAB -->
+    <div id="reports" class="tab-content" style="display:none">
+        <div class="admin-card" style="border-top: 5px solid var(--secondary);">
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                Subject-Wise Performance Analytics
+                <span style="font-size: 0.72rem; background: var(--secondary); color: var(--primary); padding: 5px 12px; border-radius: 99px;">RELEASE MODE</span>
+            </h3>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">Calculate overall percentages and release subject-wise class counts to students.</p>
+            
+            <div class="form-inline" style="background:#f0f7ff;">
+                <select id="analyticsSectionSelect" style="flex:1"><option value="">Select Section to Analyze</option></select>
+                <button onclick="generateAdminReport()">Generate Detailed Report</button>
+            </div>
+
+            <div id="forecastingList" style="margin-bottom: 30px; padding: 20px; background: #fffcf0; border: 1px solid #ffeeba; border-radius: 12px; display:none;">
+                <h4 style="margin-top:0; color:#856404;">⚠️ AI Detention Risk Forecast</h4>
+                <div id="forecastData" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
+            </div>
+
+            <div id="analyticsReportArea" style="display:none;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h4 id="analyticsReportTitle">Section Report</h4>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="releaseToStudents()" style="background:var(--secondary); color:var(--primary); font-size:12px; font-weight:800;">🔔 Release to Students</button>
+                        <button onclick="exportReportPDF()" style="background:#15803d; font-size:12px;">Download PDF Report</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="adminReportTable" style="font-size: 0.82rem;">
+                        <thead id="adminReportHead"></thead>
+                        <tbody id="adminReportBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="reportsList" style="margin-top: 40px; border-top: 1px dashed var(--border); padding-top: 20px;">
+                <h4 style="margin-bottom:15px; color:var(--text-muted)">Recent Session Logs</h4>
+                <!-- Raw logs here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIT TAB -->
+    <div id="audit" class="tab-content" style="display:none">
+        <div class="admin-card">
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                Immutable System Audit Trail
+                <span style="font-size: 0.7rem; background: var(--danger); color: white; padding: 4px 10px; border-radius: 4px;">SECURE LOG</span>
+            </h3>
+            <p style="color:var(--text-muted); margin-bottom:24px;">All sensitive actions performed by administrators are logged here for accountability. Logs are immutable.</p>
+            <div style="overflow-x: auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead style="background: #f1f5f9; text-align: left;">
+                        <tr><th style="padding:12px">Timestamp</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr>
+                    </thead>
+                    <tbody id="auditTableBody"></tbody>
+                </table>
             </div>
         </div>
     </div>
   </div>
 
   <script>
-    const API_URL = 'http://localhost:5000/api';
+    const API_URL = `http://${window.location.hostname}:5000/api`;
     const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (!user || user.type !== 'admin') window.location.href = "auth.html";
 
     // Navigation
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.onclick = () => {
+        const tabId = btn.dataset.tab;
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
         btn.classList.add('active');
-        document.getElementById(btn.dataset.tab).style.display = 'block';
-        if(btn.dataset.tab === 'geofencing' && geoMap) setTimeout(() => geoMap.invalidateSize(), 200);
-        if(btn.dataset.tab === 'reports') loadAttendanceReports();
+        document.getElementById(tabId).style.display = 'block';
+        if(tabId === 'geofencing' && geoMap) setTimeout(() => geoMap.invalidateSize(), 200);
+        if(tabId === 'reports') loadAttendanceReports();
+        if(tabId === 'approvals') loadPendingApprovals();
+        if(tabId === 'audit') loadAuditLogs();
+        if(tabId === 'attendance-edit') {
+            const editSelect = document.getElementById('editAttendanceSection');
+            editSelect.innerHTML = document.getElementById('geoSectionSelect').innerHTML;
+        }
+        
+        // Close sidebar on mobile after clicking a tab
+        if(window.innerWidth <= 900) toggleSidebar();
       };
     });
+
+    window.toggleSidebar = () => {
+        const sb = document.querySelector('.sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sb.classList.toggle('active');
+        overlay.style.display = sb.classList.contains('active') ? 'block' : 'none';
+    };
+
+    window.checkSidebar = (e) => {
+        // Optional: close if clicking outside is handled by overlay already
+    };
 
     function showMsg(msg, isError = false) {
       const el = document.getElementById('statusMsg');
@@ -437,9 +982,16 @@
       const fSelect = document.getElementById('filterStudentSection');
       const gSelect = document.getElementById('geoSectionSelect');
 
+      const sSubSelect = document.getElementById('subjectSection');
+      const eAttSelect = document.getElementById('editAttendanceSection');
+      const aRepSelect = document.getElementById('analyticsSectionSelect');
+
       tbody.innerHTML = '';
       fSelect.innerHTML = '<option value="">All Registered Students</option>';
       gSelect.innerHTML = '<option value="">-- Choose Section --</option>';
+      sSubSelect.innerHTML = '<option value="">Select Section</option>';
+      eAttSelect.innerHTML = '<option value="">Select Section</option>';
+      aRepSelect.innerHTML = '<option value="">Select Section</option>';
 
       data.forEach(s => {
         const title = `Year ${s.year} ${s.branchCode}-${s.name}`;
@@ -450,7 +1002,11 @@
           </td></tr>`;
         fSelect.add(new Option(title, s._id));
         gSelect.add(new Option(title, s._id));
+        sSubSelect.add(new Option(title, s._id));
+        eAttSelect.add(new Option(title, s._id));
+        aRepSelect.add(new Option(title, s._id));
       });
+      loadSubjects();
     }
 
     async function loadStudents() {
@@ -473,7 +1029,13 @@
         const res = await fetch(`${API_URL}/admin/users`);
         const data = await res.json();
         const tbody = document.getElementById('usersTableBody');
+        const facSelect = document.getElementById('subjectFaculty');
+        const inchargeSelect = document.getElementById('geoInCharge');
+
         tbody.innerHTML = '';
+        facSelect.innerHTML = '<option value="">Assigned Teacher</option>';
+        inchargeSelect.innerHTML = '<option value="">Section In-charge</option>';
+
         data.forEach(u => {
             const roleColor = u.type === 'admin' ? 'var(--danger)' : (u.type === 'faculty' ? 'var(--primary)' : 'var(--secondary)');
             tbody.innerHTML += `<tr><td><b style="color:${roleColor}">${u.type.toUpperCase()}</b></td><td>${u.adminId||u.facultyId||u.reg}</td><td>${u.mail}</td>
@@ -482,7 +1044,145 @@
                     ${u.faceDescriptor?.length ? `<button class="btn-secondary" style="background:#f1f5f9; color:var(--text-main); font-size: 11px; padding: 4px 8px;" onclick="resetBio('users', '${u._id}')">Reset Bio</button>` : ''}
                     <button class="btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="deleteObj('users', '${u._id}')">Revoke</button>
                 </td></tr>`;
+            if (u.type === 'faculty') {
+                const opt = new Option(`${u.name || u.facultyId}`, u._id);
+                facSelect.add(opt);
+                inchargeSelect.add(opt.cloneNode(true));
+            }
         });
+    }
+
+    async function loadSubjects() {
+        const res = await fetch(`${API_URL}/admin/subjects`);
+        const data = await res.json();
+        const tbody = document.getElementById('subjectsTableBody');
+        tbody.innerHTML = '';
+        data.forEach(sub => {
+            const s = window.allSections?.find(x => x._id === sub.sectionId) || { name: '?' };
+            tbody.innerHTML += `<tr>
+                <td>${s.year} ${s.branchCode}-${s.name}</td>
+                <td><b>${sub.name}</b></td>
+                <td>${sub.assignedFaculty?.name || 'Unassigned'}</td>
+                <td>${sub.totalClasses}</td>
+                <td><button class="btn-danger" onclick="deleteObj('subjects', '${sub._id}')">Delete</button></td>
+            </tr>`;
+        });
+    }
+
+    document.getElementById('addSubjectForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const body = {
+            sectionId: document.getElementById('subjectSection').value,
+            name: document.getElementById('subjectName').value,
+            assignedFaculty: document.getElementById('subjectFaculty').value
+        };
+        const res = await fetch(`${API_URL}/admin/subjects`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        if (res.ok) { e.target.reset(); loadSubjects(); }
+    };
+
+    // Approvals Logic
+    async function loadPendingApprovals() {
+        const res = await fetch(`${API_URL}/admin/pending-users`);
+        const data = await res.json();
+        const container = document.getElementById('approvalsList');
+        const countBadge = document.getElementById('pendingCount');
+        
+        container.innerHTML = '';
+        if (data.length === 0) {
+            container.innerHTML = '<p style="text-align:center; padding:20px; color:var(--text-muted)">No pending requests.</p>';
+            countBadge.style.display = 'none';
+            return;
+        }
+
+        countBadge.innerText = data.length;
+        countBadge.style.display = 'inline-block';
+
+        data.forEach(u => {
+            const card = document.createElement('div');
+            card.className = 'form-inline';
+            card.style = "justify-content: space-between; align-items: center; margin-bottom:10px;";
+            card.innerHTML = `
+                <div>
+                    <b>${u.name}</b> (${u.facultyId})<br>
+                    <small>${u.mail}</small>
+                </div>
+                <div style="display:flex; gap:10px">
+                    <button onclick="approveUser('${u._id}')" style="background:var(--secondary); color:#003366">Approve</button>
+                    <button onclick="deleteObj('users', '${u._id}')" class="btn-danger">Reject</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    async function approveUser(id) {
+        const res = await fetch(`${API_URL}/admin/approve-user/${id}`, { method: 'PUT' });
+        if(res.ok) { showMsg('User authorized successfully'); loadPendingApprovals(); loadUsers(); }
+        else { showMsg('Approval failed', true); }
+    }
+
+    // Attendance Editing Logic
+    async function loadAttendanceRecordsForEdit() {
+        const sId = document.getElementById('editAttendanceSection').value;
+        const date = document.getElementById('editAttendanceDate').value;
+        if(!sId || !date) return;
+
+        const res = await fetch(`${API_URL}/attendance/get/${sId}/${date}`);
+        const data = await res.json();
+        const container = document.getElementById('attendanceEditArea');
+        
+        // Fetch all students in this section to show even those without records
+        const sRes = await fetch(`${API_URL}/admin/students?sectionId=${sId}`);
+        const students = await sRes.json();
+
+        container.innerHTML = `<h4>Status for ${date}</h4><table style="width:100%">
+            <thead><tr><th>Roll No</th><th>Name</th><th>Status</th><th>Toggle</th></tr></thead>
+            <tbody></tbody></table>`;
+        const tbody = container.querySelector('tbody');
+
+        students.forEach(s => {
+            const record = data.records?.find(r => r.registerNumber === s.reg);
+            const status = record ? record.status : 'absent';
+            const statusColor = status === 'present' ? 'var(--secondary)' : 'var(--danger)';
+            
+            tbody.innerHTML += `<tr>
+                <td>${s.reg}</td>
+                <td>${s.name}</td>
+                <td><b style="color:${statusColor}">${status.toUpperCase()}</b></td>
+                <td><button onclick="toggleStudentAttendance('${data._id || ''}', '${s.reg}', '${status}', '${sId}', '${date}')" style="padding:4px 8px; font-size:10px;">Switch</button></td>
+            </tr>`;
+        });
+    }
+
+    async function toggleStudentAttendance(recordId, reg, currentStatus, sId, date) {
+        const newStatus = currentStatus === 'present' ? 'absent' : 'present';
+        
+        // If no recordId, we need to first create/initialize the attendance record? 
+        // Actually, the backend update-status handle both cases if we provide enough info.
+        // Let's refine the backend or make sure we have a recordId.
+        
+        let targetId = recordId;
+        if(!targetId) {
+            // Create a dummy record or get it if created meanwhile
+            const s = window.allSections.find(x=>x._id===sId);
+            const sectionName = `Year ${s.year} - ${s.branchCode} - Sec ${s.name}`;
+            const initRes = await fetch(`${API_URL}/attendance/submit`, {
+                method: 'POST', headers: {'Content-Type':'application/json'},
+                body: JSON.stringify({ date, sectionId: sId, section: sectionName, submittedBy: 'Admin-Override', records: [] })
+            });
+            const fresh = await fetch(`${API_URL}/attendance/get/${sId}/${date}`);
+            const freshData = await fresh.json();
+            targetId = freshData._id;
+        }
+
+        const res = await fetch(`${API_URL}/attendance/update-status`, {
+            method: 'PUT', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ recordId: targetId, registerNumber: reg, newStatus })
+        });
+        if(res.ok) loadAttendanceRecordsForEdit();
     }
 
     window.resetBio = async (type, id) => {
@@ -511,6 +1211,28 @@
 
     // Reports Logic
     async function loadAttendanceReports() {
+        // Fetch Forecasting
+        try {
+            const fRes = await fetch(`${API_URL}/admin/forecasting`);
+            const flags = await fRes.json();
+            const forecastDiv = document.getElementById('forecastingList');
+            const dataGrid = document.getElementById('forecastData');
+            
+            const risks = flags.filter(x => x.status !== 'Good');
+            if (risks.length > 0) {
+                forecastDiv.style.display = 'block';
+                dataGrid.innerHTML = risks.map(r => `
+                    <div style="background: white; padding: 12px; border-radius: 8px; border-left: 4px solid ${r.status === 'Critical' ? 'var(--danger)' : 'var(--accent)'}">
+                        <b style="font-size: 0.85rem;">${r.name}</b><br>
+                        <small style="color: grey;">${r.reg}</small><br>
+                        <span style="color:${r.status === 'Critical' ? 'var(--danger)' : '#856404'}; font-weight: 800; font-size: 0.9rem;">${r.rate}%</span>
+                    </div>
+                `).join('');
+            } else {
+                forecastDiv.style.display = 'none';
+            }
+        } catch(e) {}
+
         const res = await fetch(`${API_URL}/attendance/all`);
         const data = await res.json();
         const container = document.getElementById('reportsList');
@@ -553,6 +1275,19 @@
     }
 
     // Modals
+    window.openPasswordModal = () => document.getElementById('passwordModal').style.display='flex';
+    window.closePasswordModal = () => document.getElementById('passwordModal').style.display='none';
+    window.updateAdminPassword = async () => {
+        const oldPass = document.getElementById('oldAdminPass').value;
+        const newPass = document.getElementById('newAdminPassChange').value;
+        const res = await fetch(`${API_URL}/auth/change-password`, {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ userId: user._id, type: 'admin', oldPass, newPass })
+        });
+        if(res.ok) { showMsg('Root password updated'); closePasswordModal(); }
+        else { showMsg('Invalid old password', true); }
+    }
+
     let currentCrId = null;
     window.openCrModal = (id, name, crs) => { currentCrId = id; document.getElementById('crSectionName').innerText = name; document.getElementById('crInput').value = crs; document.getElementById('crModal').style.display='flex'; }
     window.closeCrModal = () => document.getElementById('crModal').style.display='none';
@@ -571,31 +1306,105 @@
         document.getElementById('geoStart').value = s.timeWindow?.start || '09:00';
         document.getElementById('geoEnd').value = s.timeWindow?.end || '17:00';
         document.getElementById('geoRadius').value = s.location?.radius || 100;
+        document.getElementById('geoInCharge').value = s.classInCharge || '';
         
-        setTimeout(() => {
+        setTimeout(async () => {
             if(!geoMap) {
-                geoMap = L.map('geoMap').setView([17, 82], 13);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(geoMap);
+                geoMap = L.map('geoMap').setView([17.0, 82.0], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap'
+                }).addTo(geoMap);
                 geoMap.on('click', e => setMarker(e.latlng.lat, e.latlng.lng));
             }
-            if(s.location?.lat) {
+            
+            geoMap.invalidateSize();
+            
+            // Clear inputs first
+            document.getElementById('geoLat').value = '';
+            document.getElementById('geoLng').value = '';
+
+            // Clear old heatmap
+            if(window.heatLayer) geoMap.removeLayer(window.heatLayer);
+
+            // Fetch recent attendance for this section to build heatmap
+            try {
+                const aRes = await fetch(`${API_URL}/attendance/all`);
+                const allAtt = await aRes.json();
+                const points = [];
+                allAtt.forEach(rec => {
+                    if(rec.sectionId === s._id) {
+                        rec.records.forEach(r => { if(r.lat && r.lng) points.push([r.lat, r.lng, 0.5]); });
+                    }
+                });
+                if(points.length > 0) {
+                    window.heatLayer = L.heatLayer(points, {radius: 25, blur: 15, maxZoom: 17}).addTo(geoMap);
+                }
+            } catch(e) {}
+
+            if(s.location?.lat && s.location?.lng) {
                 geoMap.setView([s.location.lat, s.location.lng], 16);
                 setMarker(s.location.lat, s.location.lng);
             } else {
-                navigator.geolocation.getCurrentPosition(p => geoMap.setView([p.coords.latitude, p.coords.longitude], 16));
+                // Fallback or Current Position
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        p => geoMap.setView([p.coords.latitude, p.coords.longitude], 16),
+                        e => geoMap.setView([17.0, 82.0], 13) // Fallback to default
+                    );
+                } else {
+                    geoMap.setView([17.0, 82.0], 13);
+                }
             }
         }, 300);
     }
+
+    function updateMapFromInputs() {
+        const lat = parseFloat(document.getElementById('geoLat').value);
+        const lng = parseFloat(document.getElementById('geoLng').value);
+        if(!isNaN(lat) && !isNaN(lng)) {
+            geoMap.setView([lat, lng], geoMap.getZoom() || 16);
+            if(geoMarker) geoMap.removeLayer(geoMarker);
+            geoMarker = L.marker([lat, lng]).addTo(geoMap);
+        }
+    }
     function setMarker(lat, lng) {
         if(geoMarker) geoMap.removeLayer(geoMarker);
+        if(window.rectLayer) geoMap.removeLayer(window.rectLayer);
+
         geoMarker = L.marker([lat, lng]).addTo(geoMap);
         document.getElementById('geoLat').value = lat.toFixed(6);
         document.getElementById('geoLng').value = lng.toFixed(6);
+
+        // Draw Square Rectangle
+        const radiusMeters = parseInt(document.getElementById('geoRadius').value) || 100;
+        const latOffset = radiusMeters / 111111;
+        const lngOffset = radiusMeters / (111111 * Math.cos(lat * Math.PI / 180));
+
+        const bounds = [
+            [lat - latOffset, lng - lngOffset],
+            [lat + latOffset, lng + lngOffset]
+        ];
+
+        window.rectLayer = L.rectangle(bounds, {color: "#003366", weight: 2, fillOpacity: 0.1}).addTo(geoMap);
     }
+
+    // Add listener for radius change to update map live
+    document.getElementById('geoRadius').addEventListener('input', () => {
+        const lat = parseFloat(document.getElementById('geoLat').value);
+        const lng = parseFloat(document.getElementById('geoLng').value);
+        if(!isNaN(lat) && !isNaN(lng)) setMarker(lat, lng);
+    });
     window.saveGeoSettings = async () => {
         const payload = {
             timeWindow: { start: document.getElementById('geoStart').value, end: document.getElementById('geoEnd').value },
-            location: { lat: parseFloat(document.getElementById('geoLat').value), lng: parseFloat(document.getElementById('geoLng').value), radius: parseInt(document.getElementById('geoRadius').value) }
+            location: { 
+                lat: parseFloat(document.getElementById('geoLat').value), 
+                lng: parseFloat(document.getElementById('geoLng').value), 
+                radius: parseInt(document.getElementById('geoRadius').value),
+                useRectangle: false 
+            },
+            classInCharge: document.getElementById('geoInCharge').value
         };
         const sId = document.getElementById('geoSectionSelect').value;
         await fetch(`${API_URL}/admin/sections/${sId}/settings`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
@@ -634,6 +1443,80 @@
         loadUsers(); e.target.reset(); showMsg('Admin Account Provisioned');
     }
 
+    async function loadAuditLogs() {
+        const res = await fetch(`${API_URL}/admin/audit-logs`);
+        const data = await res.json();
+        const tbody = document.getElementById('auditTableBody');
+        tbody.innerHTML = '';
+        data.forEach(log => {
+            const date = new Date(log.timestamp).toLocaleString();
+            tbody.innerHTML += `<tr>
+                <td><small>${date}</small></td>
+                <td><b style="color:var(--primary)">${log.performedBy}</b></td>
+                <td><span style="background:#eef2ff; color:var(--primary); padding:4px 8px; border-radius:4px; font-weight:700; font-size:10px;">${log.action}</span></td>
+                <td>${log.targetId || '--'}</td>
+                <td><i style="color:var(--text-muted)">${log.details}</i></td>
+            </tr>`;
+        });
+    }
+
+    async function generateAdminReport() {
+        const sId = document.getElementById('analyticsSectionSelect').value;
+        if(!sId) return;
+        
+        showMsg("Calculating performance...");
+        const res = await fetch(`${API_URL}/attendance/report/${sId}`);
+        const { report, subjects } = await res.json();
+        
+        document.getElementById('analyticsReportArea').style.display = 'block';
+        const thead = document.getElementById('adminReportHead');
+        const tbody = document.getElementById('adminReportBody');
+        
+        // Build Head
+        let headHtml = `<tr><th>Roll No</th><th>Name</th>`;
+        subjects.forEach(sub => headHtml += `<th>${sub.name}<br><small>(${sub.totalClasses} cls)</small></th>`);
+        headHtml += `<th>TOTAL</th><th>AVG %</th></tr>`;
+        thead.innerHTML = headHtml;
+        
+        // Build Body
+        tbody.innerHTML = '';
+        report.forEach(row => {
+            let cells = `<td>${row.reg}</td><td>${row.name}</td>`;
+            subjects.forEach(sub => cells += `<td>${row.subjects[sub._id]||0}/${sub.totalClasses}</td>`);
+            const pc = parseFloat(row.avg);
+            const color = pc < 75 ? 'var(--danger)' : (pc < 80 ? 'var(--accent)' : 'inherit');
+            cells += `<td><b>${row.total}/${row.totalHeld}</b></td><td style="color:${color}; font-weight:800">${row.avg}%</td>`;
+            const tr = document.createElement('tr');
+            tr.innerHTML = cells;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function exportReportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        doc.text("Student Attendance Performance Report", 14, 15);
+        doc.autoTable({ html: '#adminReportTable', startY: 20, theme: 'grid', styles: { fontSize: 8 } });
+        doc.save(`Attendance_Report_${new Date().toLocaleDateString()}.pdf`);
+    }
+
+    async function releaseToStudents() {
+        const sId = document.getElementById('analyticsSectionSelect').value;
+        if (!sId) return;
+        if (!confirm('Confirm attendance release? This will notify all students in this section that official statistics are updated.')) return;
+        
+        try {
+            const res = await fetch(`${BASE_URL}/attendance/release-section`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sectionId: sId, adminName: 'Administrator' })
+            });
+            if (res.ok) alert('Official statistics released and students notified ✓');
+            else alert('Failed to release statistics');
+        } catch (e) { alert('Network error'); }
+    }
+
+    document.getElementById('editAttendanceDate').valueAsDate = new Date();
     document.getElementById('filterStudentSection').onchange = loadStudents;
     document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); window.location.href="auth.html"; };
 

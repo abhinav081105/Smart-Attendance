@@ -4,7 +4,23 @@ const User = require('../models/User');
 const Section = require('../models/Section');
 const Student = require('../models/Student');
 const Attendance = require('../models/Attendance');
+const Subject = require('../models/Subject');
 const Settings = require('../models/Settings');
+const PushSubscription = require('../models/PushSubscription');
+const { sendSMS, sendWhatsApp, sendEmail, sendPush } = require('../utils/notificationHelper');
+
+// Subscribe to Push Notifications
+router.post('/subscribe', async (req, res) => {
+    try {
+        const { userId, subscription } = req.body;
+        await PushSubscription.findOneAndUpdate(
+            { userId },
+            { userId, subscription },
+            { upsert: true, new: true }
+        );
+        res.status(201).json({ message: 'Subscribed successfully' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 // Check Registration Status
 router.get('/registration-status', async (req, res) => {
@@ -69,9 +85,26 @@ router.post('/register', async (req, res) => {
     
     if (exists) return res.status(400).json({ message: 'User already exists' });
 
-    const user = new User({ type, reg, facultyId, adminId, name, mail, phone, pass, section: req.body.section, faceDescriptor });
+    // Faculty Approval Logic
+    const isApproved = (type === 'faculty') ? false : true;
+
+    const user = new User({ 
+      type, reg, facultyId, adminId, name, mail, phone, pass, 
+      section: req.body.section, faceDescriptor, 
+      isApproved 
+    });
+    
     await user.save();
-    res.json({ message: 'Registration successful!' });
+    
+    if (type === 'faculty') {
+      const msg = `Lendi Portal Alert: New Faculty registered (${name}, ${facultyId}). Please approve in Admin Dashboard.`;
+      sendSMS(process.env.ADMIN_PHONE || 'REPLACE_WITH_ADMIN_MOBILE', msg); 
+      // Free Fallback: Email the admin
+      sendEmail(process.env.EMAIL_USER, "New Faculty Registration Pending", msg);
+      res.json({ message: 'Registration request sent! Your account is pending administrator approval.' });
+    } else {
+      res.json({ message: 'Registration successful!' });
+    }
   } catch (err) {
     console.error('Registration error:', err);
     res.status(500).json({ message: 'Registration failed: ' + err.message });
@@ -132,6 +165,11 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(400).json({ message: 'No such user found!' });
     if (user.pass !== pass) return res.status(400).json({ message: 'Incorrect password!' });
     
+    // Check Approval Status
+    if (user.isApproved === false) {
+      return res.status(403).json({ message: 'Your account is pending administrator approval.' });
+    }
+    
     // Add virtual type for frontend consistency
     const userData = user.toObject();
     userData.type = type;
@@ -186,6 +224,21 @@ router.post('/enroll-face', async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // SECURITY: Ensure Face Uniqueness (New requirement)
+    const [allUsers, allStudents] = await Promise.all([
+      User.find({ faceDescriptor: { $exists: true, $ne: [] } }),
+      Student.find({ faceDescriptor: { $exists: true, $ne: [] } })
+    ]);
+
+    for (let u of [...allUsers, ...allStudents]) {
+      if (u._id.toString() !== userId && u.faceDescriptor && u.faceDescriptor.length === 128) {
+        const dist = calculateEuclideanDistance(descriptor, u.faceDescriptor);
+        if (dist < 0.3) { // Stricter threshold for uniqueness check
+          return res.status(409).json({ message: 'Security Alert: This face is already enrolled by another user.' });
+        }
+      }
+    }
+
     // SECURITY: If face is already enrolled, verify match before allowing update
     if (user.faceDescriptor && user.faceDescriptor.length === 128) {
       const distance = calculateEuclideanDistance(descriptor, user.faceDescriptor);
@@ -208,10 +261,48 @@ router.post('/enroll-face', async (req, res) => {
   }
 });
 
+// Forgot Password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { reg, facultyId, adminId, type } = req.body;
+    let user;
+    if (type === 'student' || type === 'cr') {
+      user = await Student.findOne({ reg });
+    } else if (type === 'faculty') {
+      user = await User.findOne({ facultyId, type });
+    } else {
+      user = await User.findOne({ adminId, type });
+    }
+
+    if (!user) return res.status(404).json({ message: 'No such user found.' });
+    if (!user.phone) return res.status(400).json({ message: 'No registered phone number found for this account.' });
+
+    const msg = `Smart Attendance Hub: Your passkey for account (${user.reg || user.facultyId || user.adminId}) is: ${user.pass}`;
+    
+    // Try SMS first, then Email (Free)
+    const smsResult = await sendSMS(user.phone, msg);
+    const emailResult = await sendEmail(user.mail, "Password Recovery - Smart Attendance", msg);
+    
+    // Try Web Push (Free)
+    const pushSub = await PushSubscription.findOne({ userId: user._id });
+    if (pushSub) {
+        await sendPush(pushSub.subscription, "Account Support", "Your passkey has been sent to your email.");
+    }
+    
+    if (smsResult.success || emailResult.success) {
+        res.json({ message: `Credentials have been sent to your registered contact points (Email/Mobile).` });
+    } else {
+        res.status(500).json({ message: 'Error sending credentials. Admin notification logged.' });
+    }
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to process request.' });
+  }
+});
+
 // Self-Attendance via Face
 router.post('/mark-attendance-face', async (req, res) => {
   try {
-    const { userId, type, descriptor, latitude, longitude, currentTime } = req.body;
+    const { userId, type, descriptor, latitude, longitude, currentTime, subjectId } = req.body;
     let user;
     
     if (type === 'student' || type === 'cr') {
@@ -241,18 +332,32 @@ router.post('/mark-attendance-face', async (req, res) => {
     const sectionDoc = await Section.findById(sId);
     if (!sectionDoc) return res.status(404).json({ message: 'Section not found' });
 
-    // --- GEOTAGGING & TIME WINDOW CHECK ---
+    // --- GEOTAGGING CHECK (Square / Rectangle Mode) ---
     if (sectionDoc.location && sectionDoc.location.lat && sectionDoc.location.lng) {
       if (!latitude || !longitude) {
         return res.status(403).json({ message: 'Location access required to mark attendance.' });
       }
-      const distToLocation = calculateEuclideanDistance([latitude, longitude], [sectionDoc.location.lat, sectionDoc.location.lng]);
-      // Rough conversion: 0.001 deg is approx 111m. Using a more accurate Haversine or simple threshold.
-      // For simplicity in this demo, we'll use a basic radius check.
-      // 0.0001 is roughly 10-15 meters.
-      const threshold = (sectionDoc.location.radius || 100) / 111000; 
-      if (distToLocation > threshold) {
-        return res.status(403).json({ message: 'You are outside the permitted attendance zone.' });
+
+      const centerLat = sectionDoc.location.lat;
+      const centerLng = sectionDoc.location.lng;
+      // Use saved radius or default to 200m. Adding a 15m "buffer" for GPS inaccuracy.
+      const radiusMeters = (sectionDoc.location.radius || 200) + 15; 
+
+      // Approximate degree offsets
+      const latOffset = radiusMeters / 111111;
+      const lngOffset = radiusMeters / (111111 * Math.cos(centerLat * Math.PI / 180));
+
+      const isInside = (
+        latitude <= (centerLat + latOffset) &&
+        latitude >= (centerLat - latOffset) &&
+        longitude <= (centerLng + lngOffset) &&
+        longitude >= (centerLng - lngOffset)
+      );
+
+      console.log(`[GEO] User: ${latitude}, ${longitude} | Center: ${centerLat}, ${centerLng} | Radius: ${radiusMeters}m | Inside: ${isInside}`);
+
+      if (!isInside) {
+          return res.status(403).json({ message: `Outside secure boundary. Your Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}. Target Center: ${centerLat.toFixed(5)}, ${centerLng.toFixed(5)}` });
       }
     }
 
@@ -278,14 +383,18 @@ router.post('/mark-attendance-face', async (req, res) => {
 
     const sectionName = `Year ${sectionDoc.year} - ${sectionDoc.branchCode} - Sec ${sectionDoc.name}`;
 
-    // Check if attendance record for this section and date exists
-    let attendance = await Attendance.findOne({ date: today, sectionId: sId });
+    // Check if attendance record for this section and date exists (and subject if provided)
+    const query = { date: today, sectionId: sId };
+    if (subjectId) query.subjectId = subjectId;
+    
+    let attendance = await Attendance.findOne(query);
     
     if (!attendance) {
       attendance = new Attendance({
         date: today,
         sectionId: sId,
         section: sectionName,
+        subjectId: subjectId || null,
         submittedBy: 'Face-Recognition-System',
         records: []
       });
@@ -295,8 +404,10 @@ router.post('/mark-attendance-face', async (req, res) => {
     const recordIndex = attendance.records.findIndex(r => r.registerNumber === user.reg);
     if (recordIndex > -1) {
       attendance.records[recordIndex].status = 'present';
+      attendance.records[recordIndex].lat = latitude;
+      attendance.records[recordIndex].lng = longitude;
     } else {
-      attendance.records.push({ registerNumber: user.reg, status: 'present' });
+      attendance.records.push({ registerNumber: user.reg, status: 'present', lat: latitude, lng: longitude });
     }
 
     await attendance.save();

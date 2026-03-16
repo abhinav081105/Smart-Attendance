@@ -5,6 +5,8 @@ const Section = require('../models/Section');
 const Student = require('../models/Student');
 const User = require('../models/User');
 const Settings = require('../models/Settings');
+const Attendance = require('../models/Attendance');
+const Subject = require('../models/Subject');
 
 // Setup default branches (useful for initialization)
 router.post('/init', async (req, res) => {
@@ -88,14 +90,38 @@ router.delete('/sections/:id', async (req, res) => {
 
 router.put('/sections/:id/settings', async (req, res) => {
   try {
-    const { location, timeWindow } = req.body;
+    const { location, timeWindow, classInCharge } = req.body;
     const section = await Section.findByIdAndUpdate(
       req.params.id,
-      { location, timeWindow },
+      { location, timeWindow, classInCharge },
       { new: true }
     );
     res.json(section);
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// --- SUBJECTS ---
+router.get('/subjects', async (req, res) => {
+    try {
+        const query = req.query.sectionId ? { sectionId: req.query.sectionId } : {};
+        const subjects = await Subject.find(query).populate('assignedFaculty');
+        res.json(subjects);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.post('/subjects', async (req, res) => {
+    try {
+        const subject = new Subject(req.body);
+        await subject.save();
+        res.json(subject);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete('/subjects/:id', async (req, res) => {
+    try {
+        await Subject.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Subject deleted' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 
@@ -203,6 +229,29 @@ router.delete('/users/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+router.get('/pending-users', async (req, res) => {
+  try {
+    const pending = await User.find({ isApproved: false });
+    res.json(pending);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+router.put('/approve-user/:id', async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(req.params.id, { isApproved: true });
+    
+    // Audit Log
+    await AuditLog.create({
+        performedBy: 'Admin',
+        action: 'Faculty Approval',
+        targetId: user.facultyId || user.reg,
+        details: `Approved faculty account for ${user.name}`
+    });
+
+    res.json({ message: 'User approved successfully' });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 router.put('/users/:id/reset-face', async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.params.id, { faceDescriptor: [] });
@@ -232,6 +281,51 @@ router.put('/settings/registration', async (req, res) => {
     );
     res.json({ registrationEnabled: setting.value });
   } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+const AuditLog = require('../models/AuditLog');
+
+router.get('/audit-logs', async (req, res) => {
+    try {
+        const logs = await AuditLog.find().sort({ timestamp: -1 }).limit(50);
+        res.json(logs);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// AI Attendance Forecasting
+router.get('/forecasting', async (req, res) => {
+    try {
+        const students = await Student.find();
+        const attendance = await Attendance.find();
+        
+        const forecasts = students.map(s => {
+            let totalClasses = 0;
+            let presents = 0;
+            
+            attendance.forEach(record => {
+                const studentMatch = record.records.find(r => r.registerNumber === s.reg);
+                if (studentMatch) {
+                    totalClasses++;
+                    if (studentMatch.status === 'present') presents++;
+                }
+            });
+
+            // AI Logic: Forecast detention risk based on last 5 classes trend
+            const currentRate = totalClasses > 0 ? (presents / totalClasses) * 100 : 100;
+            const status = currentRate < 75 ? 'Critical' : (currentRate < 80 ? 'Warning' : 'Good');
+            
+            return {
+                reg: s.reg,
+                name: s.name,
+                rate: currentRate.toFixed(1),
+                status,
+                totalClasses,
+                presents
+            };
+        });
+
+        res.json(forecasts.sort((a,b) => a.rate - b.rate));
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 module.exports = router;
