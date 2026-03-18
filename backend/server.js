@@ -20,7 +20,8 @@ mongoose.connect(process.env.DB_URI, {
   .catch(err => console.error('MongoDB connection error:', err));
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 app.use(cors());
 app.use(express.json());
@@ -50,8 +51,7 @@ const API_TOKEN = process.env.HF_API_TOKEN;
 
 app.post('/api/ocr', upload.single('image'), async (req, res) => {
   try {
-    const imagePath = req.file.path;
-    const imageBlob = fs.readFileSync(imagePath);
+    const imageBlob = req.file.buffer;
 
     const response = await fetch(API_URL, {
       method: "POST",
@@ -70,12 +70,15 @@ app.post('/api/ocr', upload.single('image'), async (req, res) => {
       result = { error: "Invalid or empty response from OCR API" };
     }
 
-    fs.unlinkSync(imagePath);
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: "OCR failed", details: err.message });
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+if (require.main === module) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+module.exports = app;

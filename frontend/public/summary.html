@@ -308,7 +308,7 @@
   <script>
     const user = JSON.parse(localStorage.getItem('currentUser') || 'null');
     if (!user) window.location.href = "auth.html";
-    const API_URL = `http://${window.location.hostname}:5000/api`;
+    const API_URL = '/api';
 
     const attendanceData = JSON.parse(localStorage.getItem('attendanceData') || '[]');
     let presentVal = 0, absentVal = 0, permissionVal = 0, detainedVal = 0;

@@ -1,0 +1,20 @@
+[build]
+  base = "/"
+  publish = "frontend/public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
+# Fallback for separate HTML files or SPA behavior (optional but good)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  condition = { status = [404] }
