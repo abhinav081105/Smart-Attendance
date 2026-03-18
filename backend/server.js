@@ -9,7 +9,8 @@ const adminRoutes = require('./routes/admin');
 const mongoose = require('mongoose');
 const path = require('path');
 const multer = require('multer');
-const fetch = require('node-fetch');
+// Using built-in fetch (available in Node 18+)
+// const fetch = require('node-fetch');
 const fs = require('fs');
 
 // MongoDB is already connecting via require('./config/db') above.

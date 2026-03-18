@@ -3,11 +3,15 @@ const nodemailer = require('nodemailer');
 const webpush = require('web-push');
 
 // --- WEB PUSH CONFIGURATION ---
-webpush.setVapidDetails(
-    `mailto:${process.env.EMAIL_USER}`,
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        `mailto:${process.env.EMAIL_USER || 'admin@lendi.edu.in'}`,
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+} else {
+    console.warn('[VAPID] Keys missing. Push notifications disabled.');
+}
 
 const sendPush = async (subscription, title, body) => {
     try {
