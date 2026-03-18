@@ -12,12 +12,7 @@ const multer = require('multer');
 const fetch = require('node-fetch');
 const fs = require('fs');
 
-mongoose.connect(process.env.DB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-  .then(() => console.log('MongoDB connected!'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// MongoDB is already connecting via require('./config/db') above.
 
 const app = express();
 const storage = multer.memoryStorage();

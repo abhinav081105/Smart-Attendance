@@ -13,11 +13,11 @@ if (!dbUri) {
 
 mongoose.connect(dbUri)
   .then(() => {
-    console.log('Connected to MongoDB');
+    console.log('✔ Connected to MongoDB successfully');
   })
   .catch((err) => {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+    console.error('✘ MongoDB connection error:', err.message);
+    // Do not process.exit(1) in serverless!
   });
 
 const db = mongoose.connection;
